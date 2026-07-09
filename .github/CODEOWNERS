@@ -1,0 +1,19 @@
+# Each team member owns their module
+* @shrovan @jaishree @darshan @aathira
+
+# Backend owned by Shrovan
+/backend/* @shrovan
+
+# Career engine owned by Jaishree
+/backend/services/career* @jaishree
+/knowledge/* @jaishree
+
+# AI service owned by Darshan
+/backend/services/ai* @darshan
+/backend/prompts/* @darshan
+
+# Frontend owned by Aathira
+/frontend/* @aathira
+
+# Docs owned by everyone
+/docs/* @shrovan @jaishree @darshan @aathira
