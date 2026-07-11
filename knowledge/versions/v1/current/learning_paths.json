@@ -1,0 +1,44 @@
+[
+    {
+        "career": "SOC Analyst",
+        "sequence": ["Linux", "Networking", "TCP/IP", "Log Analysis", "SIEM", "MITRE ATT&CK", "Incident Response", "Windows"],
+        "projects": ["Log Parser", "SIEM Home Lab", "Network Monitoring Dashboard"],
+        "certifications": ["Google Cybersecurity Professional Certificate", "CompTIA Security+", "Blue Team Level 1"],
+        "estimated_duration": 24
+    },
+    {
+        "career": "Penetration Tester",
+        "sequence": ["Linux", "Networking", "TCP/IP", "Python", "Nmap", "HTTP", "Burp Suite", "OWASP Top 10", "Active Directory", "Privilege Escalation"],
+        "projects": ["Port Scanner", "Web Vulnerability Scanner", "Active Directory Lab"],
+        "certifications": ["eJPT", "PNPT", "OSCP"],
+        "estimated_duration": 32
+    },
+    {
+        "career": "Cloud Security Engineer",
+        "sequence": ["Linux", "AWS", "IAM", "Docker", "Kubernetes", "Terraform"],
+        "projects": ["Secure AWS Lab", "Cloud Security Lab", "Kubernetes Hardening"],
+        "certifications": ["AWS Security Specialty", "CCSK", "Azure Security Engineer"],
+        "estimated_duration": 28
+    },
+    {
+        "career": "Application Security Engineer",
+        "sequence": ["Python", "JavaScript", "Secure Coding", "OWASP Top 10", "SAST", "DAST", "CI/CD", "Docker"],
+        "projects": ["Secure REST API", "CI/CD Security Pipeline"],
+        "certifications": ["CSSLP"],
+        "estimated_duration": 26
+    },
+    {
+        "career": "Digital Forensics Analyst",
+        "sequence": ["Windows", "Linux", "Memory Analysis", "Disk Analysis", "Log Analysis"],
+        "projects": ["Memory Investigation"],
+        "certifications": ["GCFA", "Blue Team Level 1"],
+        "estimated_duration": 28
+    },
+    {
+        "career": "Threat Intelligence Analyst",
+        "sequence": ["MITRE ATT&CK", "Log Analysis", "SIEM", "Python"],
+        "projects": ["Threat Actor Profile", "Threat Feed Dashboard"],
+        "certifications": ["CTIA", "GCTI"],
+        "estimated_duration": 24
+    }
+]

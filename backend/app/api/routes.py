@@ -1,0 +1,227 @@
+import json
+import time
+import os
+import shutil
+import logging
+from typing import Dict, Optional
+
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+
+from schemas.schemas import MentorResponse
+
+logger = logging.getLogger(__name__)
+router = APIRouter()
+
+_cache: Dict[str, dict] = {}
+CACHE_TTL = 300
+
+
+def _get_ai_service():
+    from app.main import get_ai_service
+    return get_ai_service()
+
+
+def _get_orchestrator():
+    from orchestrators.career_orchestrator import CareerOrchestrator
+    ai_svc = None
+    try:
+        from app.main import get_ai_service
+        ai_svc = get_ai_service()
+    except RuntimeError:
+        pass
+    return CareerOrchestrator(ai_service=ai_svc)
+
+
+@router.get("/careers")
+async def get_careers():
+    from knowledge.loader import knowledge_loader
+    roles = knowledge_loader.get_roles()
+    return {
+        "success": True,
+        "data": [
+            {"id": r["role"].lower().replace(" ", "-"), "title": r["role"], "description": r["description"]}
+            for r in roles
+        ],
+    }
+
+
+@router.get("/knowledge/skills")
+async def get_skills():
+    from knowledge.loader import knowledge_loader
+    skills = knowledge_loader.get_skills()
+    categories = {}
+    for skill in skills:
+        cat = skill.get("category", "Other")
+        if cat not in categories:
+            categories[cat] = []
+        categories[cat].append(skill["name"])
+    return {
+        "success": True,
+        "data": {
+            "categories": [
+                {"name": cat, "skills": skill_list}
+                for cat, skill_list in categories.items()
+            ],
+        },
+    }
+
+
+@router.post("/career/analyze")
+async def analyze_career(
+    career_goal: str = Form(...),
+    study_hours: int = Form(10),
+    manual_skills: str = Form(None),
+    resume: UploadFile = File(None),
+):
+    if not resume and not manual_skills:
+        raise HTTPException(status_code=400, detail="Either resume or manual_skills is required")
+
+    extracted_skills = []
+    if resume:
+        temp_dir = os.path.join(os.path.dirname(__file__), "temp_uploads")
+        os.makedirs(temp_dir, exist_ok=True)
+        temp_file_path = os.path.join(temp_dir, resume.filename)
+        try:
+            with open(temp_file_path, "wb") as buffer:
+                shutil.copyfileobj(resume.file, buffer)
+            
+            ai_svc = None
+            try:
+                ai_svc = _get_ai_service()
+            except RuntimeError:
+                pass
+            
+            from services.resume_service import ResumeService
+            resume_svc = ResumeService(ai_service=ai_svc)
+            profile = resume_svc.parse(temp_file_path)
+            extracted_skills = [s.name for s in profile.skills]
+        except Exception as e:
+            logger.error("Failed to parse resume: %s", e)
+            raise HTTPException(status_code=500, detail=f"Failed to parse resume: {e}")
+        finally:
+            if os.path.exists(temp_file_path):
+                try:
+                    os.remove(temp_file_path)
+                except Exception:
+                    pass
+    elif manual_skills:
+        extracted_skills = [s.strip() for s in manual_skills.split(",") if s.strip()]
+
+    orchestrator = _get_orchestrator()
+    result = await orchestrator.analyze_with_ai(
+        user_skills=extracted_skills,
+        career_goal=career_goal,
+        study_hours=study_hours,
+    )
+
+    return {"success": True, "data": result}
+
+
+@router.post("/career/explain")
+async def explain_career(request: dict):
+    career_goal = request.get("career_goal", "")
+    user_skills = request.get("user_skills", [])
+    
+    if isinstance(user_skills, str):
+        user_skills = [s.strip() for s in user_skills.split(",") if s.strip()]
+
+    if not career_goal:
+        raise HTTPException(status_code=400, detail="career_goal is required")
+
+    try:
+        ai_svc = _get_ai_service()
+    except RuntimeError:
+        raise HTTPException(status_code=503, detail="AI service not available")
+
+    orchestrator = _get_orchestrator()
+    assessment, _ = orchestrator.analyze(user_skills, career_goal)
+
+    text, confidence = await ai_svc.explain_career(assessment)
+    return {"success": True, "data": {"explanation": text, "confidence": confidence}}
+
+
+@router.post("/mentor/chat", response_model=MentorResponse)
+async def mentor_chat(request: dict):
+    question = request.get("question", "")
+    assessment_id = request.get("assessment_id", "")
+    if not question:
+        raise HTTPException(status_code=400, detail="Question is required")
+
+    try:
+        ai_svc = _get_ai_service()
+    except RuntimeError:
+        raise HTTPException(status_code=503, detail="AI service not available")
+
+    from app.domain.models import Assessment as DomainAssessment, Career as DomainCareer, UserProfile as DomainUserProfile, Skill as DomainSkill
+    from repositories.repositories import AssessmentRepository
+    from knowledge.loader import knowledge_loader
+
+    assessment = None
+    if assessment_id:
+        try:
+            repo = AssessmentRepository()
+            db_assess = repo.get_by_id(assessment_id)
+            if db_assess:
+                role_data = knowledge_loader.get_role(db_assess.career_goal) or {}
+                
+                matched_names = db_assess.matched_skills or []
+                missing_names = db_assess.missing_skills or []
+                
+                matched_skills = []
+                for name in matched_names:
+                    skill_data = knowledge_loader.get_skill(name) or {"name": name, "category": "", "difficulty": "intermediate"}
+                    matched_skills.append(DomainSkill(**skill_data))
+                    
+                missing_skills = []
+                for name in missing_names:
+                    skill_data = knowledge_loader.get_skill(name) or {"name": name, "category": "", "difficulty": "intermediate"}
+                    missing_skills.append(DomainSkill(**skill_data))
+                    
+                career = DomainCareer(
+                    id=db_assess.career_goal.lower().replace(" ", "-"),
+                    title=db_assess.career_goal,
+                    description=role_data.get("description", ""),
+                    required_skills=role_data.get("required_skills", []),
+                )
+                
+                assessment = DomainAssessment(
+                    user_profile=DomainUserProfile(skills=matched_skills),
+                    target_career=career,
+                    matched_skills=matched_skills,
+                    missing_skills=missing_skills,
+                    readiness_score=db_assess.readiness_score,
+                )
+        except Exception as e:
+            logger.warning("Failed to load assessment context from DB: %s", e)
+
+    if not assessment:
+        assessment = DomainAssessment(
+            user_profile=DomainUserProfile(),
+            target_career=DomainCareer(
+                id="unknown", title="Unknown", description="", required_skills=[]
+            ),
+        )
+
+    response = await ai_svc.mentor_chat(assessment, question)
+    return MentorResponse(response=response)
+
+
+@router.get("/projects")
+async def get_projects():
+    from knowledge.loader import knowledge_loader
+    projects = knowledge_loader.get_projects()
+    return {"success": True, "data": projects}
+
+
+@router.get("/projects/{skill_name}")
+async def get_projects_for_skill(skill_name: str):
+    from knowledge.loader import knowledge_loader
+    projects = knowledge_loader.get_projects_for_skill(skill_name)
+    return {"success": True, "data": projects}
+
+
+@router.get("/certifications/{role_name}")
+async def get_certifications_for_role(role_name: str):
+    from knowledge.loader import knowledge_loader
+    certs = knowledge_loader.get_certifications_for_role(role_name)
+    return {"success": True, "data": certs}

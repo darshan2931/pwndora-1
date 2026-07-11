@@ -1,0 +1,14 @@
+[
+    {"title": "Port Scanner", "difficulty": "Easy", "skills": ["Python", "Networking"], "estimated_hours": 8, "github_deliverables": ["scanner.py", "README.md"]},
+    {"title": "Password Strength Checker", "difficulty": "Easy", "skills": ["Python", "Cryptography"], "estimated_hours": 6, "github_deliverables": ["checker.py", "README.md"]},
+    {"title": "Log Parser", "difficulty": "Easy", "skills": ["Python", "Linux"], "estimated_hours": 6, "github_deliverables": ["parser.py", "README.md"]},
+    {"title": "Web Vulnerability Scanner", "difficulty": "Medium", "skills": ["Burp Suite", "HTTP", "OWASP Top 10"], "estimated_hours": 20, "github_deliverables": ["scanner.py", "report_template.html", "README.md"]},
+    {"title": "Network Monitoring Dashboard", "difficulty": "Medium", "skills": ["SIEM", "Networking"], "estimated_hours": 15, "github_deliverables": ["dashboard.py", "config.yaml", "README.md"]},
+    {"title": "Secure REST API", "difficulty": "Medium", "skills": ["Secure Coding", "Python"], "estimated_hours": 15, "github_deliverables": ["app.py", "tests/", "README.md"]},
+    {"title": "SIEM Home Lab", "difficulty": "Medium", "skills": ["SIEM", "Log Analysis"], "estimated_hours": 15, "github_deliverables": ["docker-compose.yml", "rules/", "README.md"]},
+    {"title": "CI/CD Security Pipeline", "difficulty": "Medium", "skills": ["CI/CD", "SAST", "DAST"], "estimated_hours": 12, "github_deliverables": [".github/workflows/", "README.md"]},
+    {"title": "Cloud Security Lab", "difficulty": "Hard", "skills": ["AWS", "IAM", "Docker"], "estimated_hours": 30, "github_deliverables": ["terraform/", "README.md"]},
+    {"title": "Active Directory Lab", "difficulty": "Hard", "skills": ["Windows", "Active Directory", "Privilege Escalation"], "estimated_hours": 25, "github_deliverables": ["setup.ps1", "README.md"]},
+    {"title": "Kubernetes Hardening", "difficulty": "Hard", "skills": ["Kubernetes", "Docker", "Linux"], "estimated_hours": 20, "github_deliverables": ["hardening-guide.md", "README.md"]},
+    {"title": "Memory Investigation", "difficulty": "Hard", "skills": ["Memory Analysis", "Volatility"], "estimated_hours": 15, "github_deliverables": ["analysis.py", "report.md"]}
+]

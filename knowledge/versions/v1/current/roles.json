@@ -1,0 +1,56 @@
+[
+    {
+        "role": "SOC Analyst",
+        "description": "Monitors security alerts, investigates incidents, and responds to threats.",
+        "required_skills": ["Networking", "Linux", "Windows", "SIEM", "Log Analysis", "Incident Response", "MITRE ATT&CK"],
+        "optional_skills": ["Python", "Bash", "PowerShell", "EDR"],
+        "recommended_certifications": ["Google Cybersecurity Professional Certificate", "CompTIA Security+", "Blue Team Level 1"],
+        "suggested_projects": ["SIEM Home Lab", "Log Analyzer", "Threat Detection Dashboard"],
+        "estimated_duration": 24
+    },
+    {
+        "role": "Penetration Tester",
+        "description": "Identifies vulnerabilities by simulating attacks.",
+        "required_skills": ["Linux", "Networking", "Python", "Bash", "Nmap", "Burp Suite", "OWASP Top 10", "Active Directory"],
+        "optional_skills": ["Metasploit", "Privilege Escalation", "Enumeration"],
+        "recommended_certifications": ["eJPT", "PNPT", "OSCP"],
+        "suggested_projects": ["Port Scanner", "Vulnerability Scanner", "Web Application Assessment"],
+        "estimated_duration": 32
+    },
+    {
+        "role": "Cloud Security Engineer",
+        "description": "Secures cloud infrastructure and cloud-native applications.",
+        "required_skills": ["Linux", "AWS", "IAM", "Docker", "Kubernetes", "Terraform"],
+        "optional_skills": ["Azure", "GCP", "CI/CD"],
+        "recommended_certifications": ["AWS Security Specialty", "CCSK", "Azure Security Engineer"],
+        "suggested_projects": ["Secure AWS Lab", "IAM Policy Analyzer", "Kubernetes Hardening"],
+        "estimated_duration": 28
+    },
+    {
+        "role": "Application Security Engineer",
+        "description": "Improves software security throughout the development lifecycle.",
+        "required_skills": ["Secure Coding", "OWASP Top 10", "SAST", "DAST", "CI/CD", "Docker", "Threat Modeling"],
+        "optional_skills": ["Python", "JavaScript", "Kubernetes"],
+        "recommended_certifications": ["CSSLP", "Secure Code Warrior"],
+        "suggested_projects": ["Secure REST API", "Code Scanner", "CI/CD Security Pipeline"],
+        "estimated_duration": 26
+    },
+    {
+        "role": "Digital Forensics Analyst",
+        "description": "Investigates security incidents and analyzes digital evidence.",
+        "required_skills": ["Windows", "Linux", "Memory Analysis", "Disk Analysis", "Timeline Analysis"],
+        "optional_skills": ["Python", "Malware Analysis", "Network Forensics"],
+        "recommended_certifications": ["GCFA", "Blue Team Level 1"],
+        "suggested_projects": ["Memory Investigation", "Malware Analysis Lab", "Forensics Case Study"],
+        "estimated_duration": 28
+    },
+    {
+        "role": "Threat Intelligence Analyst",
+        "description": "Analyzes cyber threats, threat actors, and attack patterns.",
+        "required_skills": ["MITRE ATT&CK", "OSINT", "Log Analysis", "SIEM", "Python"],
+        "optional_skills": ["Malware Analysis", "Dark Web Research", "YARA"],
+        "recommended_certifications": ["CTIA", "GCTI"],
+        "suggested_projects": ["Threat Actor Profile", "OSINT Investigation", "Threat Feed Dashboard"],
+        "estimated_duration": 24
+    }
+]

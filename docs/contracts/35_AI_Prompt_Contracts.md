@@ -8,90 +8,87 @@ The backend owns the prompt.
 
 The frontend never communicates directly with Mistral.
 
+All prompts are stored as markdown files in `backend/ai/prompts/`.
+
 ---
 
-# Resume Analyzer
+## Resume Analyzer
 
-Input
+**File:** `resume.md`
 
-Resume Text
+**Input:** Resume Text
 
-Output
-
+**Output:**
+```json
 {
-    "skills":[],
-    "projects":[],
-    "certifications":[]
+    "skills": [],
+    "projects": [],
+    "certifications": []
 }
+```
 
 ---
 
-# Career Explainer
+## Roadmap Explainer
 
-Input
+**File:** `roadmap.md`
 
-Career Goal
+**Input:** Target Role, Readiness Score, Matched Skills, Missing Skills, Roadmap Steps
 
-Matched Skills
-
-Missing Skills
-
-Roadmap
-
-Output
-
-Markdown
-
-Maximum
-
-250 words
+**Output:** Markdown (max 250 words)
 
 ---
 
-# Mentor
+## Career Explainer
 
-Input
+**File:** `career_explainer.md`
 
-Assessment
+**Input:** Career Goal, Readiness Score, Matched Skills, Missing Skills
 
-Roadmap
-
-Question
-
-Output
-
-Plain English
-
-Maximum
-
-200 words
+**Output:** Markdown (max 250 words)
 
 ---
 
-# Resume Reviewer
+## Mentor
 
-Input
+**File:** `mentor.md`
 
-Resume
+**Input:** Assessment Context, User Question
 
-Career Goal
+**Output:** Plain English (max 200 words)
 
-Output
-
-Suggestions
-
-No rewritten resume.
+**Features:** Multi-turn conversation with session context
 
 ---
 
-# Prompt Rules
+## Resume Reviewer
 
-Never invent skills.
+**File:** `resume_reviewer.md`
 
-Never invent certifications.
+**Input:** Resume Text, Career Goal
 
-Never modify backend calculations.
+**Output:** Suggestions (no rewritten resume)
 
-Always explain recommendations.
+---
 
-Return valid JSON when requested.
+## Prompt Rules
+
+- Never invent skills.
+- Never invent certifications.
+- Never modify backend calculations.
+- Always explain recommendations.
+- Return valid JSON when requested.
+- Provide user context in user message, not system prompt.
+
+---
+
+## Versioning
+
+Prompts are version-controlled via git. To roll back a prompt change:
+
+```bash
+git log --oneline backend/ai/prompts/
+git checkout <commit-hash> -- backend/ai/prompts/<prompt>.md
+```
+
+See `docs/engineering/AI_Prompt_Versioning.md` for full strategy.

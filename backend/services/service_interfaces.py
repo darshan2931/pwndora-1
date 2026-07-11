@@ -1,4 +1,4 @@
-from domain.models import Skill, Career, UserProfile, Assessment, Roadmap, Project
+from app.domain.models import Skill, Career, UserProfile, Assessment, Roadmap, Project
 
 
 class ResumeService:

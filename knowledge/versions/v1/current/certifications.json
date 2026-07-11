@@ -1,0 +1,15 @@
+[
+    {"name": "Google Cybersecurity Professional Certificate", "vendor": "Google", "difficulty": "beginner", "recommended_for": ["SOC Analyst"], "prerequisites": []},
+    {"name": "CompTIA Security+", "vendor": "CompTIA", "difficulty": "beginner", "recommended_for": ["SOC Analyst", "Penetration Tester"], "prerequisites": []},
+    {"name": "Blue Team Level 1", "vendor": "Security Blue Team", "difficulty": "intermediate", "recommended_for": ["SOC Analyst", "Digital Forensics Analyst"], "prerequisites": ["CompTIA Security+"]},
+    {"name": "eJPT", "vendor": "INE", "difficulty": "intermediate", "recommended_for": ["Penetration Tester"], "prerequisites": ["Networking", "Linux"]},
+    {"name": "PNPT", "vendor": "TCM Security", "difficulty": "intermediate", "recommended_for": ["Penetration Tester"], "prerequisites": ["eJPT"]},
+    {"name": "OSCP", "vendor": "Offensive Security", "difficulty": "advanced", "recommended_for": ["Penetration Tester"], "prerequisites": ["PNPT"]},
+    {"name": "AWS Security Specialty", "vendor": "AWS", "difficulty": "advanced", "recommended_for": ["Cloud Security Engineer"], "prerequisites": ["AWS"]},
+    {"name": "CCSK", "vendor": "CSA", "difficulty": "intermediate", "recommended_for": ["Cloud Security Engineer"], "prerequisites": ["AWS"]},
+    {"name": "Azure Security Engineer", "vendor": "Microsoft", "difficulty": "intermediate", "recommended_for": ["Cloud Security Engineer"], "prerequisites": ["Azure"]},
+    {"name": "CSSLP", "vendor": "ISC2", "difficulty": "intermediate", "recommended_for": ["Application Security Engineer"], "prerequisites": ["Secure Coding"]},
+    {"name": "GCFA", "vendor": "SANS", "difficulty": "advanced", "recommended_for": ["Digital Forensics Analyst"], "prerequisites": ["Memory Analysis", "Disk Analysis"]},
+    {"name": "CTIA", "vendor": "EC-Council", "difficulty": "intermediate", "recommended_for": ["Threat Intelligence Analyst"], "prerequisites": ["MITRE ATT&CK"]},
+    {"name": "GCTI", "vendor": "SANS", "difficulty": "advanced", "recommended_for": ["Threat Intelligence Analyst"], "prerequisites": ["CTIA"]}
+]
