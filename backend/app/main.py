@@ -9,12 +9,14 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from ai.service import AIClient, AIService
 from core.middleware import AccessLogMiddleware
+from utils.middleware.rate_limiter import RateLimitMiddleware
+from utils.middleware.logging_middleware import RequestLoggingMiddleware
 
 load_dotenv()
 
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+    format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
 )
 
 _ai_service: Optional[AIService] = None
@@ -32,7 +34,7 @@ async def lifespan(app: FastAPI):
     keys_str = os.getenv("MISTRAL_API_KEYS", "")
     if not keys_str:
         keys_str = os.getenv("MISTRAL_API_KEY", "")
-    
+
     api_keys = [k.strip() for k in keys_str.split(",") if k.strip()]
     if api_keys:
         client = AIClient(api_keys=api_keys)
@@ -50,12 +52,19 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "https://cyberpath.vercel.app",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 app.add_middleware(AccessLogMiddleware)
+
+app.add_middleware(RequestLoggingMiddleware)
+app.add_middleware(RateLimitMiddleware, requests_per_minute=60, burst=10)
 
 
 from app.api.routes import router
@@ -75,4 +84,23 @@ async def global_exception_handler(request, exc):
 
 @app.get("/health")
 async def health_check():
-    return {"status": "ok", "version": "0.1.0"}
+    db_ok = False
+    try:
+        from database.session import SessionLocal
+        db = SessionLocal()
+        db.execute("SELECT 1")
+        db.close()
+        db_ok = True
+    except Exception:
+        db_ok = False
+
+    ai_ok = _ai_service is not None
+
+    return {
+        "status": "healthy" if db_ok else "degraded",
+        "version": "0.1.0",
+        "checks": {
+            "database": "ok" if db_ok else "unavailable",
+            "ai_service": "ok" if ai_ok else "unavailable",
+        },
+    }

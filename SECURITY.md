@@ -1,25 +1,55 @@
 # Security Policy
 
-## Reporting Issues
+## Reporting Vulnerabilities
 
-Please report vulnerabilities privately.
+Report security issues privately via email to the project maintainers.
+Do not open public GitHub issues for security vulnerabilities.
 
 ---
 
-## Secrets
+## Secrets Management
 
-Never commit
+Never commit the following to version control:
 
-- API Keys
+- API Keys (MISTRAL_API_KEY, MISTRAL_API_KEYS)
+- Database credentials (DATABASE_URL)
+- Secret keys (SECRET_KEY)
+- JWT tokens
 
-- Database Passwords
+Use environment variables or a secrets manager in production.
 
-- JWT Secrets
+---
+
+## Input Validation
+
+All user inputs are validated via Pydantic schemas.
+Resume uploads are limited to 5MB and validated by file type.
+
+---
+
+## Rate Limiting
+
+API endpoints are rate-limited to 60 requests per minute per IP.
+Burst protection limits to 10 requests per second.
 
 ---
 
 ## Dependencies
 
-Update regularly.
+Update dependencies regularly via Dependabot.
+Use only trusted, well-maintained packages.
 
-Use trusted packages only.
+---
+
+## Authentication
+
+JWT-based authentication is reserved for future versions.
+Current MVP relies on rate limiting and input validation.
+
+---
+
+## Data Privacy
+
+- Resume files are processed in memory and deleted immediately after parsing
+- No user data is stored without explicit consent
+- AI interactions are not logged with personal data

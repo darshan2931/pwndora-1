@@ -10,13 +10,13 @@
 
 ### Shrovan (Backend Architect)
 
-- [ ] Set up repository structure & branch protection rules
-- [ ] Configure CI/CD pipelines (GitHub Actions): lint, typecheck, test
-- [ ] Finalize backend directory layout and module conventions
-- [ ] Create `.env.example` with all required variables
-- [ ] Set up Docker Compose with hot-reload volumes
-- [ ] Write `Dockerfile` for backend (Python 3.12 slim)
-- [ ] Write `Dockerfile` for frontend (Node multi-stage)
+- [x] Set up repository structure & branch protection rules
+- [x] Configure CI/CD pipelines (GitHub Actions): lint, typecheck, test
+- [x] Finalize backend directory layout and module conventions
+- [x] Create `.env.example` with all required variables
+- [x] Set up Docker Compose with hot-reload volumes
+- [x] Write `Dockerfile` for backend (Python 3.12 slim)
+- [x] Write `Dockerfile` for frontend (Node multi-stage)
 
 ### Jaishree (Backend Developer)
 
@@ -52,16 +52,16 @@
 
 ### Shrovan (Backend Architect)
 
-- [ ] Create `app/main.py` — FastAPI app factory with CORS, middleware, exception handlers
-- [ ] Implement Pydantic schemas in `schemas/`:
-  - [ ] `CareerAnalysisRequest` / `CareerAnalysisResponse`
-  - [ ] `ResumeUploadResponse`
-  - [ ] `RoadmapResponse`
-  - [ ] `MentorRequest` / `MentorResponse`
-  - [ ] `HealthResponse`
-- [ ] Wire up router registration in `app/main.py`
-- [ ] Set up Alembic and generate initial migration
-- [ ] Add `chat_history` and `knowledge_cache` tables to SQLAlchemy models
+- [x] Create `app/main.py` — FastAPI app factory with CORS, middleware, exception handlers
+- [x] Implement Pydantic schemas in `schemas/`:
+  - [x] `CareerAnalysisRequest` / `CareerAnalysisResponse`
+  - [x] `ResumeUploadResponse`
+  - [x] `RoadmapResponse`
+  - [x] `MentorRequest` / `MentorResponse`
+  - [x] `HealthResponse`
+- [x] Wire up router registration in `app/main.py`
+- [x] Set up Alembic and generate initial migration
+- [x] Add `chat_history` and `knowledge_cache` tables to SQLAlchemy models
 
 ### Jaishree (Backend Developer)
 
@@ -108,16 +108,16 @@
 
 ### Shrovan (Backend Architect)
 
-- [ ] Implement all API route handlers in `api/`:
-  - [ ] `GET /health` — health check
-  - [ ] `POST /api/v1/career/analyze` — full career analysis
-  - [ ] `GET /api/v1/careers` — list all careers
-  - [ ] `GET /api/v1/projects?skill=` — filter projects
-  - [ ] `POST /api/v1/mentor/chat` — AI mentor conversation
-  - [ ] `POST /api/v1/resume/upload` — resume parsing
-  - [ ] `GET /api/v1/roadmap/{id}` — retrieve stored roadmap
-- [ ] Add request rate limiting & input validation
-- [ ] Add structured logging middleware
+- [x] Implement all API route handlers in `api/`:
+  - [x] `GET /health` — health check
+  - [x] `POST /api/v1/career/analyze` — full career analysis
+  - [x] `GET /api/v1/careers` — list all careers
+  - [x] `GET /api/v1/projects?skill=` — filter projects
+  - [x] `POST /api/v1/mentor/chat` — AI mentor conversation
+  - [x] `POST /api/v1/resume/upload` — resume parsing
+  - [x] `GET /api/v1/roadmap/{id}` — retrieve stored roadmap
+- [x] Add request rate limiting & input validation
+- [x] Add structured logging middleware
 
 ### Jaishree (Backend Developer)
 
@@ -171,11 +171,11 @@
 
 ### Shrovan (Backend Architect)
 
-- [ ] Set up Vercel deployment for frontend
-- [ ] Set up Docker-based deployment for backend
-- [ ] Configure managed PostgreSQL (Supabase / Neon / RDS)
-- [ ] Add health check endpoints for container orchestration
-- [ ] Configure secrets in deployment environment
+- [x] Set up Vercel deployment for frontend
+- [x] Set up Docker-based deployment for backend
+- [x] Configure managed PostgreSQL (Supabase / Neon / RDS)
+- [x] Add health check endpoints for container orchestration
+- [x] Configure secrets in deployment environment
 
 ### Jaishree (Backend Developer)
 
@@ -207,9 +207,9 @@
 
 ### Shrovan
 
-- [ ] Final security review (env vars, API keys, input sanitization)
-- [ ] Update LICENSE, SECURITY.md, CONTRIBUTING.md
-- [ ] Tag release `v1.0.0`
+- [x] Final security review (env vars, API keys, input sanitization)
+- [x] Update LICENSE, SECURITY.md, CONTRIBUTING.md
+- [x] Tag release `v1.0.0`
 
 ### Jaishree
 

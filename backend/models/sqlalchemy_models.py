@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Integer, DateTime, func
+from sqlalchemy import Column, String, Integer, DateTime, Text, func
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 import uuid
 
@@ -37,3 +37,25 @@ class Roadmap(Base):
     total_hours = Column(Integer, default=0)
     estimated_weeks = Column(Integer, default=0)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class ChatHistory(Base):
+    __tablename__ = "chat_history"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    assessment_id = Column(UUID(as_uuid=True), nullable=False)
+    session_id = Column(String(100), nullable=False, index=True)
+    question = Column(Text, nullable=False)
+    answer = Column(Text, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class KnowledgeCache(Base):
+    __tablename__ = "knowledge_cache"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    cache_key = Column(String(255), unique=True, nullable=False, index=True)
+    data = Column(JSONB, nullable=False)
+    prompt_type = Column(String(50), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    expires_at = Column(DateTime(timezone=True), nullable=False)
