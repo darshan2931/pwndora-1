@@ -87,8 +87,9 @@ async def health_check():
     db_ok = False
     try:
         from database.session import SessionLocal
+        from sqlalchemy import text
         db = SessionLocal()
-        db.execute("SELECT 1")
+        db.execute(text("SELECT 1"))
         db.close()
         db_ok = True
     except Exception:
