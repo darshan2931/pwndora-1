@@ -1,8 +1,30 @@
 import json
+import logging
+import time
 from pathlib import Path
 from typing import Dict, List, Optional
 
-KNOWLEDGE_DIR = Path(__file__).parent.parent.parent.parent / "knowledge" / "versions" / "v1" / "current"
+logger = logging.getLogger(__name__)
+
+KNOWLEDGE_DIR = Path(__file__).parent.parent.parent / "knowledge" / "versions" / "v1" / "current"
+
+CACHE_TTL = 300
+
+REQUIRED_FIELDS = {
+    "roles.json": ["role", "description", "required_skills"],
+    "skills.json": ["name", "category", "difficulty"],
+    "projects.json": ["title", "difficulty", "skills", "estimated_hours"],
+    "certifications.json": ["name", "vendor", "difficulty", "recommended_for"],
+    "learning_paths.json": ["career", "sequence"],
+}
+
+VALID_DIFFICULTIES = {"beginner", "intermediate", "advanced"}
+VALID_PROJECT_DIFFICULTIES = {"Easy", "Medium", "Hard"}
+VALID_CATEGORIES = {
+    "Operating Systems", "Networking", "Programming", "Web Security",
+    "Cloud", "Defensive Security", "Offensive Security",
+    "Digital Forensics", "Application Security", "DevOps",
+}
 
 
 class KnowledgeLoader:
@@ -12,14 +34,31 @@ class KnowledgeLoader:
 
     def _load(self, filename: str) -> list:
         if filename in self._cache:
-            return self._cache[filename]
+            data, ts = self._cache[filename]
+            if time.time() - ts < CACHE_TTL:
+                return data
+            del self._cache[filename]
         filepath = self.knowledge_dir / filename
         if not filepath.exists():
+            logger.warning("Knowledge file not found: %s", filepath)
             return []
-        with open(filepath, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        self._cache[filename] = data
+        try:
+            with open(filepath, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except json.JSONDecodeError as e:
+            logger.error("Invalid JSON in %s: %s", filepath, e)
+            return []
+        if not isinstance(data, list):
+            logger.error("Expected list in %s, got %s", filepath, type(data).__name__)
+            return []
+        self._cache[filename] = (data, time.time())
         return data
+
+    def invalidate_cache(self, filename: str = None):
+        if filename:
+            self._cache.pop(filename, None)
+        else:
+            self._cache.clear()
 
     def get_roles(self) -> list:
         return self._load("roles.json")
@@ -85,6 +124,53 @@ class KnowledgeLoader:
             if query_lower in s.get("name", "").lower()
             or query_lower in s.get("category", "").lower()
         ]
+
+    def validate_all(self) -> List[str]:
+        errors = []
+        for filename, required_fields in REQUIRED_FIELDS.items():
+            data = self._load(filename)
+            if not data:
+                errors.append(f"{filename}: file missing or empty")
+                continue
+            for i, item in enumerate(data):
+                for field in required_fields:
+                    if field not in item:
+                        errors.append(f"{filename}[{i}]: missing required field '{field}'")
+                if filename == "skills.json":
+                    diff = item.get("difficulty", "")
+                    if diff and diff not in VALID_DIFFICULTIES:
+                        errors.append(
+                            f"{filename}[{i}] '{item.get('name')}': invalid difficulty '{diff}'"
+                        )
+                    cat = item.get("category", "")
+                    if cat and cat not in VALID_CATEGORIES:
+                        errors.append(
+                            f"{filename}[{i}] '{item.get('name')}': invalid category '{cat}'"
+                        )
+                if filename == "projects.json":
+                    diff = item.get("difficulty", "")
+                    if diff and diff not in VALID_PROJECT_DIFFICULTIES:
+                        errors.append(
+                            f"{filename}[{i}] '{item.get('title')}': invalid difficulty '{diff}'"
+                        )
+        all_skill_names = {s["name"].lower() for s in self.get_skills()}
+        all_role_names = {r["role"].lower() for r in self.get_roles()}
+        for i, role in enumerate(self.get_roles()):
+            for skill_name in role.get("required_skills", []) + role.get("optional_skills", []):
+                if skill_name.lower() not in all_skill_names:
+                    errors.append(f"roles.json[{i}] '{role['role']}': references unknown skill '{skill_name}'")
+            for cert_name in role.get("recommended_certifications", []):
+                cert_names = {c["name"].lower() for c in self.get_certifications()}
+                if cert_name.lower() not in cert_names:
+                    errors.append(f"roles.json[{i}] '{role['role']}': references unknown cert '{cert_name}'")
+        for i, skill in enumerate(self.get_skills()):
+            for prereq in skill.get("prerequisites", []):
+                if prereq.lower() not in all_skill_names:
+                    errors.append(f"skills.json[{i}] '{skill['name']}': references unknown prerequisite '{prereq}'")
+        for i, path in enumerate(self.get_learning_paths()):
+            if path.get("career", "").lower() not in all_role_names:
+                errors.append(f"learning_paths.json[{i}]: references unknown career '{path.get('career')}'")
+        return errors
 
 
 knowledge_loader = KnowledgeLoader()

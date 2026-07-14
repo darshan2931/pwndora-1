@@ -31,7 +31,7 @@
         "description": "Improves software security throughout the development lifecycle.",
         "required_skills": ["Secure Coding", "OWASP Top 10", "SAST", "DAST", "CI/CD", "Docker", "Threat Modeling"],
         "optional_skills": ["Python", "JavaScript", "Kubernetes"],
-        "recommended_certifications": ["CSSLP", "Secure Code Warrior"],
+        "recommended_certifications": ["CSSLP"],
         "suggested_projects": ["Secure REST API", "Code Scanner", "CI/CD Security Pipeline"],
         "estimated_duration": 26
     },

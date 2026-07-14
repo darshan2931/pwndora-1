@@ -1,0 +1,45 @@
+role_schema:
+  description: Schema for cybersecurity role definitions
+  type: object
+  required:
+    - role
+    - description
+    - required_skills
+  properties:
+    role:
+      type: string
+      description: Display name of the cybersecurity role
+      examples:
+        - SOC Analyst
+        - Penetration Tester
+        - Cloud Security Engineer
+        - Application Security Engineer
+        - Digital Forensics Analyst
+        - Threat Intelligence Analyst
+    description:
+      type: string
+      description: Brief description of the role's responsibilities
+    required_skills:
+      type: array
+      items:
+        type: string
+      description: Skills that must be learned for this role
+    optional_skills:
+      type: array
+      items:
+        type: string
+      description: Additional skills that are beneficial but not mandatory
+    recommended_certifications:
+      type: array
+      items:
+        type: string
+      description: Certifications recommended for this role
+    suggested_projects:
+      type: array
+      items:
+        type: string
+      description: Project names from the project catalog
+    estimated_duration:
+      type: integer
+      description: Estimated learning duration in weeks
+      minimum: 1

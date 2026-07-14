@@ -1,0 +1,60 @@
+skill_schema:
+  description: Schema for cybersecurity skill definitions
+  type: object
+  required:
+    - name
+    - category
+    - difficulty
+  properties:
+    name:
+      type: string
+      description: Unique display name of the skill
+      examples:
+        - Linux
+        - Python
+        - SIEM
+        - Nmap
+    category:
+      type: string
+      description: Category grouping for the skill
+      enum:
+        - Operating Systems
+        - Networking
+        - Programming
+        - Web Security
+        - Cloud
+        - Defensive Security
+        - Offensive Security
+        - Digital Forensics
+        - Application Security
+        - DevOps
+    difficulty:
+      type: string
+      description: Complexity level of the skill
+      enum:
+        - beginner
+        - intermediate
+        - advanced
+    prerequisites:
+      type: array
+      items:
+        type: string
+      description: Skill names that must be learned before this skill
+      default: []
+    estimated_hours:
+      type: integer
+      description: Approximate hours to learn this skill
+      minimum: 1
+      default: 10
+    related_tools:
+      type: array
+      items:
+        type: string
+      description: Tools commonly used with this skill
+      default: []
+    learning_resources:
+      type: array
+      items:
+        type: string
+      description: Curated learning resources for this skill
+      default: []

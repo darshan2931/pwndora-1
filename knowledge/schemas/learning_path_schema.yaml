@@ -1,0 +1,31 @@
+learning_path_schema:
+  description: Schema for career learning path definitions
+  type: object
+  required:
+    - career
+    - sequence
+  properties:
+    career:
+      type: string
+      description: Target career role name (must match a role in roles.json)
+    sequence:
+      type: array
+      items:
+        type: string
+      description: Ordered list of skill names to learn
+    projects:
+      type: array
+      items:
+        type: string
+      description: Project names recommended at various stages
+      default: []
+    certifications:
+      type: array
+      items:
+        type: string
+      description: Certifications recommended during this path
+      default: []
+    estimated_duration:
+      type: integer
+      description: Total estimated duration in weeks
+      minimum: 1

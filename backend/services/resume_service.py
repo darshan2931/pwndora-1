@@ -93,7 +93,8 @@ class ResumeService(IResumeService):
         certs_data = self.kb.get_certifications()
         for cert in certs_data:
             name = cert["name"]
-            pattern = rf"\b{re.escape(name.lower())}\b"
+            escaped = re.escape(name.lower())
+            pattern = rf"(?<!\w){escaped}(?!\w)"
             if re.search(pattern, text_lower):
                 extracted_certs.append(name)
         return extracted_certs

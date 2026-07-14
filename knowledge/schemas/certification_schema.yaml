@@ -1,0 +1,42 @@
+certification_schema:
+  description: Schema for cybersecurity certification definitions
+  type: object
+  required:
+    - name
+    - vendor
+    - difficulty
+    - recommended_for
+  properties:
+    name:
+      type: string
+      description: Full certification name
+      examples:
+        - CompTIA Security+
+        - eJPT
+        - OSCP
+    vendor:
+      type: string
+      description: Organization that issues the certification
+      examples:
+        - CompTIA
+        - INE
+        - Offensive Security
+        - SANS
+    difficulty:
+      type: string
+      description: Certification difficulty level
+      enum:
+        - beginner
+        - intermediate
+        - advanced
+    recommended_for:
+      type: array
+      items:
+        type: string
+      description: Role names this certification is recommended for
+    prerequisites:
+      type: array
+      items:
+        type: string
+      description: Skills or certifications required before attempting
+      default: []

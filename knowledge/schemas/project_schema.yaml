@@ -1,0 +1,38 @@
+project_schema:
+  description: Schema for practical project definitions
+  type: object
+  required:
+    - title
+    - difficulty
+    - skills
+    - estimated_hours
+  properties:
+    title:
+      type: string
+      description: Unique project name
+      examples:
+        - Port Scanner
+        - Web Vulnerability Scanner
+        - SIEM Home Lab
+    difficulty:
+      type: string
+      description: Project complexity level
+      enum:
+        - Easy
+        - Medium
+        - Hard
+    skills:
+      type: array
+      items:
+        type: string
+      description: Skills demonstrated or practiced by this project
+    estimated_hours:
+      type: integer
+      description: Approximate hours to complete the project
+      minimum: 1
+    github_deliverables:
+      type: array
+      items:
+        type: string
+      description: Files or directories expected in the GitHub submission
+      default: []
