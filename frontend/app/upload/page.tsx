@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { SUPPORTED_CAREERS } from '@/constants';
 
-export default function UploadPage() {
+function UploadForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const preselectedCareer = searchParams.get('career') || '';
@@ -73,5 +73,13 @@ export default function UploadPage() {
         </button>
       </form>
     </div>
+  );
+}
+
+export default function UploadPage() {
+  return (
+    <Suspense fallback={<div className="max-w-2xl mx-auto"><h1 className="text-3xl font-bold mb-6">Career Assessment</h1><p>Loading...</p></div>}>
+      <UploadForm />
+    </Suspense>
   );
 }

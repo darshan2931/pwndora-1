@@ -20,7 +20,7 @@ class CareerService:
 
 
 class RoadmapService:
-    def generate(self, missing_skills: list, weekly_hours: int) -> Roadmap:
+    def generate(self, assessment: Assessment, study_hours: int = 10) -> Roadmap:
         pass
 
     def order_by_prerequisites(self, skills: list) -> list:
