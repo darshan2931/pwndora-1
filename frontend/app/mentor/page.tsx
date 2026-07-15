@@ -77,8 +77,8 @@ export default function MentorPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 002.455 2.456z" />
                 </svg>
               </div>
-              <h3 className="font-semibold text-gray-900 mb-2">How can I help you today?</h3>
-              <p className="text-sm text-gray-500 mb-6 max-w-sm mx-auto">
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">How can I help you today?</h3>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-6 max-w-sm mx-auto">
                 Ask me anything about cybersecurity careers, certifications, or learning paths.
               </p>
               <div className="flex flex-wrap justify-center gap-2 max-w-lg mx-auto">
@@ -86,7 +86,7 @@ export default function MentorPage() {
                   <button
                     key={i}
                     onClick={() => send(q)}
-                    className="text-left px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-primary/5 hover:border-primary/30 transition-all"
+                    className="text-left px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-primary/5 hover:border-primary/30 transition-all"
                   >
                     {q}
                   </button>
@@ -112,15 +112,15 @@ export default function MentorPage() {
                   max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-line
                   ${m.role === 'user'
                     ? 'bg-primary text-white rounded-br-md'
-                    : 'bg-gray-100 text-gray-800 rounded-bl-md'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-bl-md'
                   }
                 `}
               >
                 {m.content}
               </div>
               {m.role === 'user' && (
-                <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center ml-2 mt-1 flex-shrink-0">
-                  <svg className="w-4 h-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <div className="w-8 h-8 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center ml-2 mt-1 flex-shrink-0">
+                  <svg className="w-4 h-4 text-gray-600 dark:text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0" />
                   </svg>
                 </div>
@@ -135,11 +135,11 @@ export default function MentorPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25" />
                 </svg>
               </div>
-              <div className="bg-gray-100 rounded-2xl rounded-bl-md px-4 py-3">
+              <div className="bg-gray-100 dark:bg-gray-700 rounded-2xl rounded-bl-md px-4 py-3">
                 <div className="flex gap-1">
-                  <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  <span className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <span className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <span className="w-2 h-2 bg-gray-400 dark:bg-gray-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                 </div>
               </div>
             </div>
@@ -148,7 +148,7 @@ export default function MentorPage() {
           <div ref={messagesEndRef} />
         </div>
 
-        <div className="border-t p-4">
+        <div className="border-t border-gray-200 dark:border-gray-700 p-4">
           <div className="flex gap-2">
             <input
               ref={inputRef}
@@ -156,7 +156,7 @@ export default function MentorPage() {
               onChange={e => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Ask about certifications, skills, career paths..."
-              className="flex-1 rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus-ring-offset-0 focus:ring-primary/20 focus:border-primary"
+              className="flex-1 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus-ring-offset-0 focus:ring-primary/20 focus:border-primary"
               disabled={loading}
               aria-label="Type your question"
             />

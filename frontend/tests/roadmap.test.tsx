@@ -41,7 +41,7 @@ describe('RoadmapPage', () => {
       expect(screen.getByText('Learning Roadmap')).toBeDefined();
     });
     expect(screen.getByText('SOC Analyst')).toBeDefined();
-    expect(screen.getByText('SIEM')).toBeDefined();
+    expect(screen.getAllByText('SIEM').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('Python')).toBeDefined();
   });
 

@@ -143,7 +143,7 @@ function UploadForm() {
           />
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
               Weekly Study Hours
             </label>
             <div className="flex items-center gap-4">
@@ -153,7 +153,7 @@ function UploadForm() {
                 max={40}
                 value={studyHours}
                 onChange={e => setStudyHours(Number(e.target.value))}
-                className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary"
+                className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-primary"
                 aria-label="Weekly study hours"
               />
               <span className="w-16 text-center font-semibold text-primary bg-primary/10 px-3 py-1 rounded-lg text-sm">
@@ -162,18 +162,18 @@ function UploadForm() {
             </div>
           </div>
 
-          <div className="flex bg-gray-100 rounded-lg p-1">
+          <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
             <button
               type="button"
               onClick={() => setMode('file')}
-              className={`flex-1 py-2 rounded-md text-sm font-medium transition-all ${mode === 'file' ? 'bg-white text-primary shadow-sm' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}`}
+              className={`flex-1 py-2 rounded-md text-sm font-medium transition-all ${mode === 'file' ? 'bg-white dark:bg-gray-600 text-primary shadow-sm' : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-600'}`}
             >
               Upload Resume
             </button>
             <button
               type="button"
               onClick={() => setMode('manual')}
-              className={`flex-1 py-2 rounded-md text-sm font-medium transition-all ${mode === 'manual' ? 'bg-white text-primary shadow-sm' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}`}
+              className={`flex-1 py-2 rounded-md text-sm font-medium transition-all ${mode === 'manual' ? 'bg-white dark:bg-gray-600 text-primary shadow-sm' : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-600'}`}
             >
               Enter Skills Manually
             </button>
@@ -188,7 +188,7 @@ function UploadForm() {
               onClick={() => fileInputRef.current?.click()}
               className={`
                 border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all
-                ${dragActive ? 'border-primary bg-primary/5' : file ? 'border-accent bg-accent/5' : 'border-gray-300 hover:border-primary hover:bg-gray-50'}
+                ${dragActive ? 'border-primary bg-primary/5' : file ? 'border-accent bg-accent/5' : 'border-gray-300 dark:border-gray-600 hover:border-primary hover:bg-gray-50 dark:hover:bg-gray-700/50'}
               `}
               role="button"
               aria-label="Upload resume file"
@@ -207,8 +207,8 @@ function UploadForm() {
                   <svg className="w-10 h-10 text-accent mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
                   </svg>
-                  <p className="font-medium text-gray-900">{file.name}</p>
-                  <p className="text-sm text-gray-500">{formatFileSize(file.size)}</p>
+                  <p className="font-medium text-gray-900 dark:text-gray-100">{file.name}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{formatFileSize(file.size)}</p>
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); setFile(null); }}
@@ -222,10 +222,10 @@ function UploadForm() {
                   <svg className="w-10 h-10 text-gray-400 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
                   </svg>
-                  <p className="font-medium text-gray-900">
+                  <p className="font-medium text-gray-900 dark:text-gray-100">
                     <span className="text-primary">Click to upload</span> or drag and drop
                   </p>
-                  <p className="text-sm text-gray-500">PDF, DOCX, or TXT (max 10MB)</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">PDF, DOCX, or TXT (max 10MB)</p>
                 </div>
               )}
             </div>
@@ -241,7 +241,7 @@ function UploadForm() {
           )}
 
           {error && (
-            <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-error" role="alert">
+            <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-error" role="alert">
               <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
               </svg>
@@ -252,10 +252,10 @@ function UploadForm() {
           {loading && progress > 0 && (
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">Analyzing your profile...</span>
+                <span className="text-gray-600 dark:text-gray-400">Analyzing your profile...</span>
                 <span className="font-medium text-primary">{Math.round(progress)}%</span>
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
+              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
                 <div
                   className="bg-primary h-2 rounded-full transition-all duration-300"
                   style={{ width: `${progress}%` }}

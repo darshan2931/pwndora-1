@@ -15,7 +15,7 @@ const features = [
   {
     icon: (
       <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504-1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
       </svg>
     ),
     title: 'Career Intelligence',
@@ -50,7 +50,7 @@ const steps = [
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-secondary/5 to-accent/5">
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-secondary/5 to-accent/5 dark:from-primary/10 dark:via-secondary/10 dark:to-accent/10">
       <section className="py-20 md:py-28 text-center">
         <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-1.5 rounded-full text-sm font-medium mb-6">
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -58,11 +58,11 @@ export default function Home() {
           </svg>
           AI-Powered Career Intelligence
         </div>
-        <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 max-w-3xl mx-auto leading-none tracking-tight">
+        <h1 className="text-5xl md:text-6xl font-bold text-gray-900 dark:text-gray-50 mb-6 max-w-3xl mx-auto leading-none tracking-tight">
           Your Personalized Path to a{' '}
           <span className="text-primary">Cybersecurity Career</span>
         </h1>
-        <p className="text-lg md:text-xl text-gray-600 mb-10 max-w-2xl mx-auto">
+        <p className="text-lg md:text-xl text-gray-600 dark:text-gray-400 mb-10 max-w-2xl mx-auto">
           Identify your skills, discover the right career path, and get a customized learning roadmap
           powered by artificial intelligence.
         </p>
@@ -94,8 +94,8 @@ export default function Home() {
 
       <section className="py-16">
         <div className="text-center mb-12">
-          <h2 className="text-4xl font-bold text-gray-900 mb-3">How It Works</h2>
-          <p className="text-gray-600 max-w-xl mx-auto">Four steps to your personalized cybersecurity career plan</p>
+          <h2 className="text-4xl font-bold text-gray-900 dark:text-gray-50 mb-3">How It Works</h2>
+          <p className="text-gray-600 dark:text-gray-400 max-w-xl mx-auto">Four steps to your personalized cybersecurity career plan</p>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
           {steps.map((step) => (
@@ -103,8 +103,8 @@ export default function Home() {
               <div className="w-16 h-16 bg-primary/10 text-primary rounded-2xl flex items-center justify-center text-xl font-bold mx-auto mb-4 hover:bg-primary/20 transition-all">
                 {step.number}
               </div>
-              <h3 className="font-semibold text-gray-900 mb-2">{step.title}</h3>
-              <p className="text-sm text-gray-600">{step.description}</p>
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">{step.title}</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">{step.description}</p>
             </div>
           ))}
         </div>
@@ -112,8 +112,8 @@ export default function Home() {
 
       <section className="py-16">
         <div className="text-center mb-12">
-          <h2 className="text-4xl font-bold text-gray-900 mb-3">Everything You Need</h2>
-          <p className="text-gray-600 max-w-xl mx-auto">Comprehensive tools to guide your cybersecurity journey</p>
+          <h2 className="text-4xl font-bold text-gray-900 dark:text-gray-50 mb-3">Everything You Need</h2>
+          <p className="text-gray-600 dark:text-gray-400 max-w-xl mx-auto">Comprehensive tools to guide your cybersecurity journey</p>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {features.map((feature) => (
@@ -125,8 +125,8 @@ export default function Home() {
               <div className="w-12 h-12 bg-primary/10 text-primary rounded-xl flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-all">
                 {feature.icon}
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">{feature.title}</h3>
-              <p className="text-gray-600 text-sm leading-relaxed">{feature.description}</p>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">{feature.title}</h3>
+              <p className="text-gray-600 dark:text-gray-400 text-sm leading-relaxed">{feature.description}</p>
             </Card>
           ))}
         </div>

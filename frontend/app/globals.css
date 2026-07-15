@@ -19,6 +19,11 @@
 
   html {
     @apply scroll-smooth;
+    overflow-x: clip;
+  }
+
+  body {
+    overflow-x: clip;
   }
 }
 
@@ -36,20 +41,12 @@
   }
 
   .page-title {
-    @apply text-4xl font-bold text-gray-900;
+    @apply text-4xl font-bold text-gray-900 dark:text-gray-50;
     @apply tracking-tight leading-none;
   }
 
-  .dark .page-title {
-    @apply text-gray-50;
-  }
-
   .page-subtitle {
-    @apply text-gray-600 mt-4 max-w-2xl;
-  }
-
-  .dark .page-subtitle {
-    @apply text-gray-400;
+    @apply text-gray-600 dark:text-gray-400 mt-4 max-w-2xl;
   }
 
   .card {
@@ -133,7 +130,8 @@
   .input-field {
     @apply w-full rounded-lg border px-4 py-3 text-sm;
     @apply transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-0;
-    @apply placeholder:text-gray-400;
+    @apply bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100;
+    @apply placeholder:text-gray-400 dark:placeholder:text-gray-500;
     @apply focus:border-primary focus:ring-primary/20;
     @apply error:border-error error:ring-error/20;
     @apply disabled:opacity-50 disabled:cursor-not-allowed;
@@ -142,7 +140,8 @@
   .textarea-field {
     @apply w-full rounded-lg border px-4 py-3 text-sm;
     @apply transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-0;
-    @apply placeholder:text-gray-400 resize-vertical;
+    @apply bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100;
+    @apply placeholder:text-gray-400 dark:placeholder:text-gray-500 resize-vertical;
     @apply focus:border-primary focus:ring-primary/20;
     @apply error:border-error error:ring-error/20;
     @apply disabled:opacity-50 disabled:cursor-not-allowed;
@@ -150,7 +149,7 @@
 
   .select-field {
     @apply w-full rounded-lg border px-4 py-3 text-sm;
-    @apply transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-0 bg-white;
+    @apply transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-0 bg-white dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100;
     @apply placeholder:text-gray-400;
     @apply focus:border-primary focus:ring-primary/20;
     @apply error:border-error error:ring-error/20;
@@ -158,7 +157,7 @@
   }
 
   .badge {
-    @apply inline-flex items-center px-2.5 px-3 rounded-full text-xs font-medium transition-colors;
+    @apply inline-flex items-center px-2.5 rounded-full text-xs font-medium transition-colors;
     @apply text-[0.65rem] leading-none;
   }
 

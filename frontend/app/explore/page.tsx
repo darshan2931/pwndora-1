@@ -19,7 +19,7 @@ const careerDescriptions: Record<string, { description: string; icon: string; sk
   'Penetration Tester': {
     description: 'Identify and exploit vulnerabilities in systems and networks. Conduct authorized security assessments.',
     icon: '🔓',
-    skills: ['Nmap', 'Metaspoot', 'Enumeration', 'Privilege Escalation', 'Python'],
+    skills: ['Nmap', 'Metasploit', 'Enumeration', 'Privilege Escalation', 'Python'],
   },
   'Cloud Security Engineer': {
     description: 'Secure cloud infrastructure and services. Implement security controls across AWS, Azure, and GCP.',
@@ -107,11 +107,11 @@ export default function ExplorePage() {
       </div>
 
       <div className="mb-6">
-        <h3 className="text-sm font-medium text-gray-700 mb-2">Filter by Skill</h3>
+        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Filter by Skill</h3>
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setSelectedSkill(null)}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${!selectedSkill ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${!selectedSkill ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
           >
             All Careers
           </button>
@@ -119,7 +119,7 @@ export default function ExplorePage() {
             <button
               key={skill}
               onClick={() => setSelectedSkill(selectedSkill === skill ? null : skill)}
-              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${selectedSkill === skill ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${selectedSkill === skill ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
             >
               {skill}
             </button>
@@ -133,7 +133,7 @@ export default function ExplorePage() {
         </div>
       ) : (
         <>
-          <p className="text-sm text-gray-500 mb-4">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
             Showing {filteredCareers.length} career{filteredCareers.length !== 1 ? 's' : ''}
             {selectedSkill && ` matching "${selectedSkill}"`}
           </p>
@@ -149,15 +149,15 @@ export default function ExplorePage() {
                 >
                   <div className="flex items-center gap-3 mb-3">
                     <span className="text-3xl">{info?.icon || '🛡️'}</span>
-                    <h3 className="text-lg font-semibold text-gray-900">{career.title}</h3>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{career.title}</h3>
                   </div>
 
-                  <p className="text-sm text-gray-600 mb-4 flex-1">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 flex-1">
                     {career.description || info?.description || ''}
                   </p>
 
                   <div className="mb-4">
-                    <p className="text-xs font-medium text-gray-500 mb-2">Key Skills</p>
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Key Skills</p>
                     <div className="flex flex-wrap gap-1.5">
                       {(info?.skills || []).slice(0, 5).map(s => (
                         <Badge key={s} variant="primary" size="sm">{s}</Badge>
@@ -166,7 +166,7 @@ export default function ExplorePage() {
                   </div>
 
                   {career.estimated_weeks && (
-                    <p className="text-xs text-gray-500 mb-3">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
                       <svg className="w-3.5 h-3.5 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
@@ -191,7 +191,7 @@ export default function ExplorePage() {
 
           {filteredCareers.length === 0 && (
             <div className="text-center py-16">
-              <p className="text-gray-500 mb-4">No careers match the selected skill filter.</p>
+              <p className="text-gray-500 dark:text-gray-400 mb-4">No careers match the selected skill filter.</p>
               <Button variant="outline" onClick={() => setSelectedSkill(null)}>Show All Careers</Button>
             </div>
           )}
