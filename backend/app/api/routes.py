@@ -1,6 +1,7 @@
 import os
 import shutil
 import logging
+from typing import Dict
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
@@ -182,10 +183,13 @@ async def mentor_chat(request: dict):
             repo = AssessmentRepository()
             db_assess = repo.get_by_id(assessment_id)
             if db_assess:
-                role_data = knowledge_loader.get_role(db_assess.career_goal) or {}
+                career_goal_str = str(db_assess.career_goal)
+                role_data = knowledge_loader.get_role(career_goal_str) or {}
                 
-                matched_names = db_assess.matched_skills or []
-                missing_names = db_assess.missing_skills or []
+                raw_matched = db_assess.matched_skills
+                matched_names = [str(n) for n in raw_matched] if isinstance(raw_matched, list) else []
+                raw_missing = db_assess.missing_skills
+                missing_names = [str(n) for n in raw_missing] if isinstance(raw_missing, list) else []
                 
                 matched_skills = []
                 for name in matched_names:
@@ -198,8 +202,8 @@ async def mentor_chat(request: dict):
                     missing_skills.append(DomainSkill(**skill_data))
                     
                 career = DomainCareer(
-                    id=db_assess.career_goal.lower().replace(" ", "-"),
-                    title=db_assess.career_goal,
+                    id=career_goal_str.lower().replace(" ", "-"),
+                    title=career_goal_str,
                     description=role_data.get("description", ""),
                     required_skills=role_data.get("required_skills", []),
                 )

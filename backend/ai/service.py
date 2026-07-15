@@ -3,7 +3,7 @@ import json
 import logging
 import re
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 import httpx
 
@@ -265,7 +265,7 @@ class ResponseValidator:
         return True
 
     @staticmethod
-    def compute_confidence(text: str, known_skills: list[str], known_certs: list[str] = None) -> float:
+    def compute_confidence(text: str, known_skills: list[str], known_certs: Optional[list[str]] = None) -> float:
         if not text:
             return 0.0
 
@@ -287,7 +287,7 @@ class ResponseValidator:
         return min(1.0, round(score, 2))
 
     @staticmethod
-    def extract_skills_from_json(data: dict) -> dict:
+    def extract_skills_from_json(data: Any) -> dict:
         result = {"skills": [], "projects": [], "certifications": []}
         if isinstance(data, dict):
             result["skills"] = [

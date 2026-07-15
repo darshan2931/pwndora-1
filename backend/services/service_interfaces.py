@@ -1,3 +1,5 @@
+from typing import List
+
 from app.domain.models import Skill, Career, UserProfile, Assessment, Roadmap, Project
 
 
@@ -10,7 +12,7 @@ class ResumeService:
 
 
 class CareerService:
-    def analyze(self, profile: UserProfile, target: Career) -> Assessment:
+    def analyze(self, user_skills: list[str], career_goal: str) -> Assessment:
         pass
 
     def calculate_readiness(self, matched: int, total: int) -> int:
@@ -28,8 +30,8 @@ class RoadmapService:
 
 
 class RecommendationService:
-    def recommend_projects(self, skills: list) -> list[Project]:
+    def recommend_projects(self, assessment: Assessment, max_projects: int = 5) -> List[dict]:
         pass
 
-    def recommend_certifications(self, career: Career) -> list[str]:
+    def recommend_certifications(self, assessment: Assessment) -> List[dict]:
         pass

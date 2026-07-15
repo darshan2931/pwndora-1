@@ -39,7 +39,18 @@ DEMO_RESPONSES = {
 }
 
 
-def get_demo_response(prompt_type: str, **kwargs) -> str:
+from typing import Any, overload, Literal
+
+@overload
+def get_demo_response(prompt_type: Literal["resume"], **kwargs) -> dict[str, list[str]]: ...
+
+@overload
+def get_demo_response(prompt_type: Literal["mentor", "roadmap", "career"], **kwargs) -> str: ...
+
+@overload
+def get_demo_response(prompt_type: str, **kwargs) -> Any: ...
+
+def get_demo_response(prompt_type: str, **kwargs) -> Any:
     if prompt_type == "mentor":
         question = kwargs.get("question", "").lower()
         if "cert" in question:
