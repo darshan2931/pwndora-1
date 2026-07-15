@@ -8,6 +8,7 @@ import Skeleton, { SkeletonCard } from '@/components/ui/Skeleton';
 import { SUPPORTED_CAREERS } from '@/constants';
 import { Career } from '@/types';
 import Link from 'next/link';
+import { getCareers } from '@/services/api';
 
 const careerDescriptions: Record<string, { description: string; icon: string; skills: string[] }> = {
   'SOC Analyst': {
@@ -18,7 +19,7 @@ const careerDescriptions: Record<string, { description: string; icon: string; sk
   'Penetration Tester': {
     description: 'Identify and exploit vulnerabilities in systems and networks. Conduct authorized security assessments.',
     icon: '🔓',
-    skills: ['Nmap', 'Metasploit', 'Enumeration', 'Privilege Escalation', 'Python'],
+    skills: ['Nmap', 'Metaspoot', 'Enumeration', 'Privilege Escalation', 'Python'],
   },
   'Cloud Security Engineer': {
     description: 'Secure cloud infrastructure and services. Implement security controls across AWS, Azure, and GCP.',
@@ -40,6 +41,26 @@ const careerDescriptions: Record<string, { description: string; icon: string; sk
     icon: '🔬',
     skills: ['Memory Analysis', 'Disk Analysis', 'Log Analysis', 'Incident Response'],
   },
+  'Security Architect': {
+    description: 'Design and oversee enterprise security infrastructure. Build zero trust architectures and security policies.',
+    icon: '🏗️',
+    skills: ['Networking', 'Firewalls', 'IAM', 'Threat Modeling', 'Docker'],
+  },
+  'DevSecOps Engineer': {
+    description: 'Integrate security into CI/CD pipelines. Automate security testing and enforce compliance in deployments.',
+    icon: '⚙️',
+    skills: ['CI/CD', 'Docker', 'Kubernetes', 'SAST', 'Terraform'],
+  },
+  'GRC Analyst': {
+    description: 'Manage governance, risk, and compliance programs. Ensure organizations meet regulatory and security standards.',
+    icon: '📋',
+    skills: ['Compliance Frameworks', 'NIST', 'ISO 27001', 'Risk Assessment', 'Security Auditing'],
+  },
+  'Incident Responder': {
+    description: 'Lead response to security breaches. Coordinate containment, eradication, and recovery efforts.',
+    icon: '🚨',
+    skills: ['Incident Response', 'SIEM', 'Memory Analysis', 'Network Forensics', 'MITRE ATT&CK'],
+  },
 };
 
 export default function ExplorePage() {
@@ -48,26 +69,21 @@ export default function ExplorePage() {
   const [selectedSkill, setSelectedSkill] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch('/api/v1/careers')
-      .then(res => res.json())
+    getCareers()
       .then(data => {
         if (data.success && data.data) setCareers(data.data);
-        else {
-          setCareers(SUPPORTED_CAREERS.map(c => ({
-            id: c.id,
-            title: c.title,
-            description: careerDescriptions[c.title]?.description || '',
-          })));
-        }
+        else fallback();
       })
-      .catch(() => {
-        setCareers(SUPPORTED_CAREERS.map(c => ({
-          id: c.id,
-          title: c.title,
-          description: careerDescriptions[c.title]?.description || '',
-        })));
-      })
+      .catch(() => fallback())
       .finally(() => setLoading(false));
+
+    function fallback() {
+      setCareers(SUPPORTED_CAREERS.map(c => ({
+        id: c.id,
+        title: c.title,
+        description: careerDescriptions[c.title]?.description || '',
+      })));
+    }
   }, []);
 
   const allSkills = Array.from(new Set(
@@ -95,9 +111,7 @@ export default function ExplorePage() {
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setSelectedSkill(null)}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-              !selectedSkill ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
+            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${!selectedSkill ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
           >
             All Careers
           </button>
@@ -105,9 +119,7 @@ export default function ExplorePage() {
             <button
               key={skill}
               onClick={() => setSelectedSkill(selectedSkill === skill ? null : skill)}
-              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                selectedSkill === skill ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${selectedSkill === skill ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
             >
               {skill}
             </button>
@@ -130,7 +142,11 @@ export default function ExplorePage() {
             {filteredCareers.map((career) => {
               const info = careerDescriptions[career.title];
               return (
-                <Card key={career.id || career.title} hover className="flex flex-col slide-up">
+                <Card
+                  key={career.id || career.title}
+                  hover
+                  className="flex flex-col slide-up hover:shadow-lg hover:-translate-y-1 transition-all"
+                >
                   <div className="flex items-center gap-3 mb-3">
                     <span className="text-3xl">{info?.icon || '🛡️'}</span>
                     <h3 className="text-lg font-semibold text-gray-900">{career.title}</h3>
@@ -159,7 +175,12 @@ export default function ExplorePage() {
                   )}
 
                   <Link href={`/upload?career=${encodeURIComponent(career.title)}`}>
-                    <Button variant="outline" fullWidth size="sm">
+                    <Button
+                      variant="outline"
+                      fullWidth
+                      size="sm"
+                      className="hover:shadow-lg hover:-translate-y-1 transition-all"
+                    >
                       Start Assessment →
                     </Button>
                   </Link>

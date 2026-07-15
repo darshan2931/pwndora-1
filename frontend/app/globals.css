@@ -8,8 +8,17 @@
     @apply bg-gray-50 text-gray-900 antialiased;
   }
 
+  .dark body,
+  .dark {
+    @apply bg-gray-950 text-gray-50;
+  }
+
   * {
     @apply selection:bg-primary/20 selection:text-primary;
+  }
+
+  html {
+    @apply scroll-smooth;
   }
 }
 
@@ -23,45 +32,249 @@
   }
 
   .page-container {
-    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8;
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12;
   }
 
   .page-title {
-    @apply text-3xl font-bold text-gray-900;
+    @apply text-4xl font-bold text-gray-900;
+    @apply tracking-tight leading-none;
+  }
+
+  .dark .page-title {
+    @apply text-gray-50;
   }
 
   .page-subtitle {
-    @apply text-gray-600 mt-2;
+    @apply text-gray-600 mt-4 max-w-2xl;
+  }
+
+  .dark .page-subtitle {
+    @apply text-gray-400;
   }
 
   .card {
     @apply bg-white rounded-xl border border-gray-200 shadow-sm;
+    @apply transition-all duration-200;
+  }
+
+  .dark .card {
+    @apply bg-gray-800 border-gray-700;
   }
 
   .card-hover {
-    @apply card transition-all duration-200 hover:shadow-md hover:border-gray-300;
+    @apply card hover:shadow-lg hover:border-gray-300 dark:hover:border-gray-600;
+  }
+
+  .card-elevated {
+    @apply bg-white rounded-xl border-0 shadow-lg;
+    @apply transition-all duration-300;
+    @apply hover:shadow-xl hover:-translate-y-1 dark:hover:shadow-dark-lg;
+  }
+
+  .dark .card-elevated {
+    @apply bg-gray-800;
   }
 
   .fade-in {
-    @apply animate-[fadeIn_0.3s_ease-out];
+    @apply animate-fade-in;
   }
 
   .slide-up {
-    @apply animate-[slideUp_0.4s_ease-out];
+    @apply animate-slide-up;
   }
-}
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
+  .slide-down {
+    @apply animate-slide-down;
+  }
 
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
-}
+  .btn-primary {
+    @apply bg-primary text-white hover:bg-primary-dark focus:bg-primary-dark focus:ring-2 focus:ring-primary/20 focus:ring-offset-0;
+    @apply transition-all duration-200 transform;
+    @apply hover:scale-[1.02] active:scale-[0.98];
+    @apply disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100;
+  }
 
-@keyframes pulse-slow {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
+  .btn-secondary {
+    @apply bg-secondary text-white hover:bg-secondary-dark focus:bg-secondary-dark focus:ring-2 focus:ring-secondary/20 focus:ring-offset-0;
+    @apply transition-all duration-200 transform;
+    @apply hover:scale-[1.02] active:scale-[0.98];
+    @apply disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100;
+  }
+
+  .btn-accent {
+    @apply bg-accent text-white hover:bg-accent-dark focus:bg-accent-dark focus:ring-2 focus:ring-accent/20 focus:ring-offset-0;
+    @apply transition-all duration-200 transform;
+    @apply hover:scale-[1.02] active:scale-[0.98];
+    @apply disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100;
+  }
+
+  .btn-outline {
+    @apply border-2 border-primary text-primary hover:bg-primary/50 focus:bg-primary/50 focus:ring-2 focus:ring-primary/20 focus:ring-offset-0;
+    @apply transition-all duration-200 transform;
+    @apply hover:scale-[1.02] active:scale-[0.98];
+    @apply disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100;
+  }
+
+  .btn-ghost {
+    @apply text-gray-600 hover:bg-gray-100 hover:text-gray-900 focus:bg-gray-100 focus:ring-2 focus:ring-gray-400 focus:ring-offset-0;
+    @apply transition-all duration-200 transform;
+    @apply hover:scale-[1.02] active:scale-[0.98];
+    @apply disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100;
+    @apply dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-gray-50 dark:focus:bg-gray-800;
+  }
+
+  .btn-danger {
+    @apply bg-error text-white hover:bg-error-dark focus:bg-error-dark focus:ring-2 focus:ring-error/20 focus:ring-offset-0;
+    @apply transition-all duration-200 transform;
+    @apply hover:scale-[1.02] active:scale-[0.98];
+    @apply disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100;
+  }
+
+  .input-field {
+    @apply w-full rounded-lg border px-4 py-3 text-sm;
+    @apply transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-0;
+    @apply placeholder:text-gray-400;
+    @apply focus:border-primary focus:ring-primary/20;
+    @apply error:border-error error:ring-error/20;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .textarea-field {
+    @apply w-full rounded-lg border px-4 py-3 text-sm;
+    @apply transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-0;
+    @apply placeholder:text-gray-400 resize-vertical;
+    @apply focus:border-primary focus:ring-primary/20;
+    @apply error:border-error error:ring-error/20;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .select-field {
+    @apply w-full rounded-lg border px-4 py-3 text-sm;
+    @apply transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-0 bg-white;
+    @apply placeholder:text-gray-400;
+    @apply focus:border-primary focus:ring-primary/20;
+    @apply error:border-error error:ring-error/20;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2.5 px-3 rounded-full text-xs font-medium transition-colors;
+    @apply text-[0.65rem] leading-none;
+  }
+
+  .badge-primary {
+    @apply bg-primary/10 text-primary hover:bg-primary/20;
+  }
+
+  .badge-secondary {
+    @apply bg-secondary/10 text-secondary hover:bg-secondary/20;
+  }
+
+  .badge-accent {
+    @apply bg-accent/10 text-accent hover:bg-accent/20;
+  }
+
+  .badge-warning {
+    @apply bg-warning/10 text-warning hover:bg-warning/20;
+  }
+
+  .badge-error {
+    @apply bg-error/10 text-error hover:bg-error/20;
+  }
+
+  .badge-info {
+    @apply bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600;
+  }
+
+  .badge-success {
+    @apply bg-accent/10 text-accent hover:bg-accent/20;
+  }
+
+  .badge-danger {
+    @apply bg-error/10 text-error hover:bg-error/20;
+  }
+
+  .skeleton {
+    @apply bg-gray-200 dark:bg-gray-700;
+    @apply animate-pulse;
+  }
+
+  .skeleton-circular {
+    @apply h-8 w-8 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse;
+  }
+
+  .skeleton-header {
+    @apply h-4 w-32 rounded bg-gray-200 dark:bg-gray-700 animate-pulse;
+  }
+
+  .skeleton-body {
+    @apply h-4 w-full rounded bg-gray-200 dark:bg-gray-700 animate-pulse mb-2;
+  }
+
+  .skeleton-body-lg {
+    @apply h-4 w-2/3 rounded bg-gray-200 dark:bg-gray-700 animate-pulse mb-2;
+  }
+
+  .nav-link {
+    @apply px-3 py-2 rounded-lg text-sm font-medium transition-colors;
+    @apply hover:bg-gray-100 dark:hover:bg-gray-800;
+    @apply focus:bg-primary/10 focus:text-primary focus:ring-2 focus:ring-primary/20 focus:ring-offset-0;
+    @apply active:bg-primary/10 active:text-primary;
+  }
+
+  .nav-link-active {
+    @apply bg-primary/10 text-primary;
+  }
+
+  .hero-gradient {
+    @apply bg-gradient-to-br from-primary via-secondary to-accent/10;
+  }
+
+  .card-gradient {
+    @apply bg-gradient-to-br from-primary/5 via-secondary/5 to-accent/5;
+  }
+
+  .hover-lift {
+    @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-lg;
+  }
+
+  .dark .hover-lift {
+    @apply hover:-translate-y-1 dark:hover:shadow-lg;
+  }
+
+  .focus-ring {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:ring-offset-0;
+  }
+
+  .dark .focus-ring {
+    @apply focus-visible:ring-primary/30;
+  }
+
+  .transition-common {
+    @apply transition-all duration-200;
+  }
+
+  .delay-75 {
+    @apply transition-delay-[75ms];
+  }
+
+  .delay-100 {
+    @apply transition-delay-[100ms];
+  }
+
+  .delay-150 {
+    @apply transition-delay-[150ms];
+  }
+
+  .delay-200 {
+    @apply transition-delay-[200ms];
+  }
+
+  .delay-250 {
+    @apply transition-delay-[250ms];
+  }
+
+  .delay-300 {
+    @apply transition-delay-[300ms];
+  }
 }

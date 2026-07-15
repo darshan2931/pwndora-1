@@ -7,6 +7,7 @@ import { Card, CardHeader } from '@/components/ui/Card';
 import { Select, Textarea } from '@/components/ui/Input';
 import Badge from '@/components/ui/Badge';
 import { SUPPORTED_CAREERS } from '@/constants';
+import { analyzeCareer, saveAssessment } from '@/services/api';
 
 export default function AssessPage() {
   const router = useRouter();
@@ -35,14 +36,30 @@ export default function AssessPage() {
     formData.append('manual_skills', manualSkills);
 
     try {
-      const res = await fetch('/api/v1/career/analyze', { method: 'POST', body: formData });
-      if (!res.ok) throw new Error('Failed');
-      const data = await res.json();
+      const data = await analyzeCareer(formData);
       if (data.success) {
-        sessionStorage.setItem('assessment', JSON.stringify(data.data));
+        const assessmentData = { ...data.data, study_hours: studyHours };
+        sessionStorage.setItem('assessment', JSON.stringify(assessmentData));
+
+        saveAssessment({
+          career_goal: data.data.career_goal,
+          matched_skills: data.data.matched_skills,
+          missing_skills: data.data.missing_skills,
+          readiness_score: data.data.career_readiness,
+          roadmap: (data.data.roadmap || []).map(s => ({ ...s })),
+          estimated_weeks: data.data.estimated_weeks || 0,
+          ai_summary: data.data.ai_summary || '',
+          study_hours: studyHours,
+          projects: (data.data.recommended_projects || []).map(p => ({ ...p })),
+        }).then(res => {
+          if (res.success && res.data?.assessment_id) {
+            sessionStorage.setItem('assessment_id', res.data.assessment_id);
+          }
+        }).catch(() => {});
+
         router.push('/dashboard');
       } else {
-        setError(data.message || 'Analysis failed.');
+        setError('Analysis failed.');
         setStep('skills');
       }
     } catch {
@@ -59,9 +76,9 @@ export default function AssessPage() {
             <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
           </svg>
         </div>
-        <h2 className="text-2xl font-bold mb-2">Analyzing Your Profile</h2>
-        <p className="text-gray-600">Matching your skills against <strong>{careerGoal}</strong> requirements...</p>
-        <div className="mt-6 w-64 mx-auto bg-gray-200 rounded-full h-2">
+        <h2 className="text-2xl font-bold mb-2 dark:text-gray-100">Analyzing Your Profile</h2>
+        <p className="text-gray-600 dark:text-gray-400">Matching your skills against <strong>{careerGoal}</strong> requirements...</p>
+        <div className="mt-6 w-64 mx-auto bg-gray-200 dark:bg-gray-700 rounded-full h-2">
           <div className="bg-primary h-2 rounded-full animate-pulse" style={{ width: '60%' }} />
         </div>
       </div>
@@ -102,7 +119,7 @@ export default function AssessPage() {
           </div>
 
           <div className="mt-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
               Weekly Study Hours
             </label>
             <div className="flex items-center gap-4">
@@ -112,7 +129,7 @@ export default function AssessPage() {
                 max={40}
                 value={studyHours}
                 onChange={e => setStudyHours(Number(e.target.value))}
-                className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary"
+                className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-primary"
               />
               <span className="w-16 text-center font-semibold text-primary bg-primary/10 px-3 py-1 rounded-lg text-sm">
                 {studyHours}h
@@ -145,13 +162,13 @@ export default function AssessPage() {
               text-left p-6 rounded-xl border-2 transition-all duration-200
               ${careerGoal === career.title
                 ? 'border-primary bg-primary/5 shadow-md'
-                : 'border-gray-200 bg-white hover:border-primary/50 hover:shadow-sm'
+                : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-primary/50 hover:shadow-sm'
               }
             `}
           >
             <span className="text-3xl mb-3 block">{career.icon}</span>
-            <h3 className="font-semibold text-gray-900 mb-1">{career.title}</h3>
-            <p className="text-xs text-gray-500">Click to select →</p>
+            <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-1">{career.title}</h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Click to select →</p>
           </button>
         ))}
       </div>

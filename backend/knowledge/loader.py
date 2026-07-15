@@ -24,6 +24,7 @@ VALID_CATEGORIES = {
     "Operating Systems", "Networking", "Programming", "Web Security",
     "Cloud", "Defensive Security", "Offensive Security",
     "Digital Forensics", "Application Security", "DevOps",
+    "Governance",
 }
 
 

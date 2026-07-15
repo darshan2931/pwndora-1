@@ -43,7 +43,8 @@ def validate_career_goal(goal: str) -> Optional[str]:
     VALID_CAREERS = {
         "soc analyst", "penetration tester", "cloud security engineer",
         "application security engineer", "digital forensics analyst",
-        "threat intelligence analyst",
+        "threat intelligence analyst", "security architect",
+        "devsecops engineer", "grc analyst", "incident responder",
     }
     if goal.lower() in VALID_CAREERS:
         return goal

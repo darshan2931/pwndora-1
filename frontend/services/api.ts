@@ -11,7 +11,7 @@ import {
   CertificationsResponse,
 } from '@/types';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api/v1';
 
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${url}`, {
@@ -32,6 +32,28 @@ export async function analyzeCareer(formData: FormData): Promise<CareerAnalysisR
     method: 'POST',
     body: formData,
   });
+}
+
+export async function saveAssessment(data: {
+  career_goal: string;
+  matched_skills: string[];
+  missing_skills: string[];
+  readiness_score: number;
+  roadmap: Array<Record<string, unknown>>;
+  estimated_weeks: number;
+  ai_summary: string;
+  study_hours: number;
+  projects: Array<Record<string, unknown>>;
+}): Promise<{ success: boolean; data?: { assessment_id: string } }> {
+  return request('/career/save', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function getAssessment(assessmentId: string): Promise<{ success: boolean; data: Record<string, unknown> }> {
+  return request(`/assessments/${encodeURIComponent(assessmentId)}`);
 }
 
 export async function getCareers(): Promise<CareersResponse> {
@@ -55,20 +77,18 @@ export async function getCertifications(roleName: string): Promise<Certification
   return request<CertificationsResponse>(`/certifications/${encodeURIComponent(roleName)}`);
 }
 
-export async function mentorChat(question: string, sessionId?: string): Promise<MentorChatResponse> {
+export async function mentorChat(question: string, assessmentId?: string): Promise<MentorChatResponse> {
   return request<MentorChatResponse>('/mentor/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ question, session_id: sessionId }),
+    body: JSON.stringify({ question, assessment_id: assessmentId || '' }),
   });
 }
 
 export async function explainCareer(data: {
   career_goal: string;
-  matched_skills: string[];
-  missing_skills: string[];
-  readiness_score: number;
-}): Promise<{ success: boolean; explanation: string }> {
+  user_skills: string[];
+}): Promise<{ success: boolean; data: { explanation: string; confidence: number } }> {
   return request('/career/explain', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

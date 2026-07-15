@@ -6,6 +6,7 @@ import Button from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Select, Textarea } from '@/components/ui/Input';
 import { SUPPORTED_CAREERS } from '@/constants';
+import { analyzeCareer, saveAssessment } from '@/services/api';
 
 type UploadMode = 'file' | 'manual';
 
@@ -84,17 +85,33 @@ function UploadForm() {
     if (manualSkills.trim()) formData.append('manual_skills', manualSkills);
 
     try {
-      const res = await fetch('/api/v1/career/analyze', { method: 'POST', body: formData });
-      if (!res.ok) throw new Error('Analysis failed');
-      const data = await res.json();
+      const data = await analyzeCareer(formData);
       clearInterval(progressInterval);
       setProgress(100);
 
       if (data.success) {
-        sessionStorage.setItem('assessment', JSON.stringify(data.data));
+        const assessmentData = { ...data.data, study_hours: studyHours };
+        sessionStorage.setItem('assessment', JSON.stringify(assessmentData));
+
+        saveAssessment({
+          career_goal: data.data.career_goal,
+          matched_skills: data.data.matched_skills,
+          missing_skills: data.data.missing_skills,
+          readiness_score: data.data.career_readiness,
+          roadmap: (data.data.roadmap || []).map(s => ({ ...s })),
+          estimated_weeks: data.data.estimated_weeks || 0,
+          ai_summary: data.data.ai_summary || '',
+          study_hours: studyHours,
+          projects: (data.data.recommended_projects || []).map(p => ({ ...p })),
+        }).then(res => {
+          if (res.success && res.data?.assessment_id) {
+            sessionStorage.setItem('assessment_id', res.data.assessment_id);
+          }
+        }).catch(() => {});
+
         setTimeout(() => router.push('/dashboard'), 400);
       } else {
-        setError(data.message || 'Analysis failed. Please try again.');
+        setError('Analysis failed. Please try again.');
         setProgress(0);
       }
     } catch {
@@ -116,7 +133,7 @@ function UploadForm() {
       </div>
 
       <form onSubmit={handleSubmit}>
-        <Card padding="lg" className="space-y-6">
+        <Card padding="lg" className="space-y-6 hover:shadow-lg hover:-translate-y-1 transition-all">
           <Select
             label="Target Career"
             value={careerGoal}
@@ -149,18 +166,14 @@ function UploadForm() {
             <button
               type="button"
               onClick={() => setMode('file')}
-              className={`flex-1 py-2 rounded-md text-sm font-medium transition-colors ${
-                mode === 'file' ? 'bg-white text-primary shadow-sm' : 'text-gray-600 hover:text-gray-900'
-              }`}
+              className={`flex-1 py-2 rounded-md text-sm font-medium transition-all ${mode === 'file' ? 'bg-white text-primary shadow-sm' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}`}
             >
               Upload Resume
             </button>
             <button
               type="button"
               onClick={() => setMode('manual')}
-              className={`flex-1 py-2 rounded-md text-sm font-medium transition-colors ${
-                mode === 'manual' ? 'bg-white text-primary shadow-sm' : 'text-gray-600 hover:text-gray-900'
-              }`}
+              className={`flex-1 py-2 rounded-md text-sm font-medium transition-all ${mode === 'manual' ? 'bg-white text-primary shadow-sm' : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'}`}
             >
               Enter Skills Manually
             </button>

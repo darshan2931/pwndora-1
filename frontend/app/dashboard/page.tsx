@@ -8,6 +8,7 @@ import Badge from '@/components/ui/Badge';
 import Skeleton, { SkeletonDashboard } from '@/components/ui/Skeleton';
 import { AssessmentData } from '@/types';
 import { READINESS_THRESHOLDS, READINESS_LABELS } from '@/constants';
+import { getAssessment } from '@/services/api';
 
 function ReadinessGauge({ score }: { score: number }) {
   const radius = 70;
@@ -63,10 +64,32 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const assessmentId = sessionStorage.getItem('assessment_id');
     const stored = sessionStorage.getItem('assessment');
+
     if (stored) {
       try { setData(JSON.parse(stored)); } catch { /* ignore */ }
     }
+
+    if (assessmentId) {
+      getAssessment(assessmentId)
+        .then(res => {
+          if (res.success && res.data) {
+            setData(prev => ({
+              ...(prev || {}),
+              career_goal: res.data.career_goal as string,
+              career_readiness: res.data.career_readiness as number,
+              matched_skills: res.data.matched_skills as string[],
+              missing_skills: res.data.missing_skills as string[],
+              estimated_weeks: res.data.estimated_weeks as number,
+              study_hours: res.data.study_hours as number,
+              roadmap: res.data.roadmap as AssessmentData['roadmap'],
+            } as AssessmentData));
+          }
+        })
+        .catch(() => {});
+    }
+
     setLoading(false);
   }, []);
 
@@ -113,7 +136,10 @@ export default function DashboardPage() {
         </Card>
 
         <div className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-6">
-          <Card hover>
+          <Card
+            hover
+            className="hover:shadow-lg hover:-translate-y-1 transition-all"
+          >
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
                 <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -127,7 +153,10 @@ export default function DashboardPage() {
             </div>
           </Card>
 
-          <Card hover>
+          <Card
+            hover
+            className="hover:shadow-lg hover:-translate-y-1 transition-all"
+          >
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center">
                 <svg className="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -142,7 +171,10 @@ export default function DashboardPage() {
           </Card>
 
           {data.estimated_weeks !== undefined && data.estimated_weeks > 0 && (
-            <Card hover>
+            <Card
+              hover
+              className="hover:shadow-lg hover:-translate-y-1 transition-all"
+            >
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
                   <svg className="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -158,7 +190,10 @@ export default function DashboardPage() {
           )}
 
           {data.study_hours && (
-            <Card hover>
+            <Card
+              hover
+              className="hover:shadow-lg hover:-translate-y-1 transition-all"
+            >
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
                   <svg className="w-5 h-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -236,7 +271,7 @@ export default function DashboardPage() {
       <div className="flex flex-col sm:flex-row gap-3">
         <Button onClick={() => router.push('/roadmap')} size="lg">
           <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0l4.994 2.497c.317.158.69.158 1.006 0z" />
           </svg>
           View Roadmap
         </Button>

@@ -16,8 +16,8 @@ const variantStyles: Record<Variant, string> = {
   primary: 'bg-primary text-white hover:bg-blue-700 focus:ring-blue-500',
   secondary: 'bg-secondary text-white hover:bg-purple-700 focus:ring-purple-500',
   accent: 'bg-accent text-white hover:bg-emerald-700 focus:ring-emerald-500',
-  outline: 'border-2 border-primary text-primary hover:bg-blue-50 focus:ring-blue-500',
-  ghost: 'text-gray-600 hover:bg-gray-100 hover:text-gray-900 focus:ring-gray-400',
+  outline: 'border-2 border-primary text-primary hover:bg-blue-50 dark:hover:bg-blue-900/20 focus:ring-blue-500',
+  ghost: 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100 focus:ring-gray-400',
   danger: 'bg-error text-white hover:bg-red-700 focus:ring-red-500',
 };
 

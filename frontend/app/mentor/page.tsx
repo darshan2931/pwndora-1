@@ -5,6 +5,7 @@ import Button from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { MENTOR_SUGGESTED_QUESTIONS } from '@/constants';
 import { MentorMessage } from '@/types';
+import { mentorChat } from '@/services/api';
 
 export default function MentorPage() {
   const [messages, setMessages] = useState<MentorMessage[]>([]);
@@ -35,12 +36,7 @@ export default function MentorPage() {
     setLoading(true);
 
     try {
-      const res = await fetch('/api/v1/mentor/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question: text }),
-      });
-      const data = await res.json();
+      const data = await mentorChat(text);
       const assistantMessage: MentorMessage = {
         role: 'assistant',
         content: data.response || 'I could not process that question. Please try again.',
@@ -72,13 +68,13 @@ export default function MentorPage() {
         <p className="page-subtitle">Ask questions about cybersecurity careers, skills, and certifications.</p>
       </div>
 
-      <Card className="flex-1 flex flex-col overflow-hidden">
+      <Card className="flex-1 flex flex-col overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all">
         <div className="flex-1 overflow-y-auto p-4 space-y-4" role="log" aria-label="Chat messages" aria-live="polite">
           {messages.length === 0 && (
             <div className="text-center py-16">
               <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg className="w-8 h-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 002.455 2.456z" />
                 </svg>
               </div>
               <h3 className="font-semibold text-gray-900 mb-2">How can I help you today?</h3>
@@ -90,7 +86,7 @@ export default function MentorPage() {
                   <button
                     key={i}
                     onClick={() => send(q)}
-                    className="text-left px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-primary/5 hover:border-primary/30 transition-colors"
+                    className="text-left px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-700 hover:bg-primary/5 hover:border-primary/30 transition-all"
                   >
                     {q}
                   </button>
@@ -160,7 +156,7 @@ export default function MentorPage() {
               onChange={e => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Ask about certifications, skills, career paths..."
-              className="flex-1 rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+              className="flex-1 rounded-lg border border-gray-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus-ring-offset-0 focus:ring-primary/20 focus:border-primary"
               disabled={loading}
               aria-label="Type your question"
             />

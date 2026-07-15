@@ -1,4 +1,5 @@
 import os
+import uuid
 import shutil
 import logging
 from typing import Dict, cast
@@ -135,6 +136,106 @@ async def analyze_career(
     )
 
     return {"success": True, "data": result}
+
+
+@router.post("/career/save")
+async def save_assessment(request: dict):
+    career_goal = sanitize_string(request.get("career_goal", ""), max_length=100)
+    matched_skills = request.get("matched_skills", [])
+    missing_skills = request.get("missing_skills", [])
+    readiness_score = request.get("readiness_score", 0)
+    roadmap = request.get("roadmap", [])
+    estimated_weeks = request.get("estimated_weeks", 0)
+    ai_summary = request.get("ai_summary", "")
+    study_hours = request.get("study_hours", 10)
+    projects = request.get("projects", [])
+
+    if not career_goal:
+        raise HTTPException(status_code=400, detail="career_goal is required")
+
+    try:
+        from repositories.repositories import AssessmentRepository, RoadmapRepository
+        assessment_repo = AssessmentRepository()
+        roadmap_repo = RoadmapRepository()
+
+        default_user_id = str(uuid.UUID("00000000-0000-0000-0000-000000000001"))
+
+        assessment = assessment_repo.create(
+            user_id=default_user_id,
+            career_goal=career_goal,
+            readiness_score=readiness_score,
+            matched_skills=matched_skills,
+            missing_skills=missing_skills,
+            weekly_hours=study_hours,
+        )
+
+        if roadmap:
+            roadmap_repo.create(
+                assessment_id=str(assessment.id),
+                steps=roadmap,
+                total_hours=sum(s.get("estimated_hours", 0) for s in roadmap),
+                estimated_weeks=estimated_weeks,
+            )
+
+        return {
+            "success": True,
+            "data": {
+                "assessment_id": str(assessment.id),
+                "career_goal": career_goal,
+                "readiness_score": readiness_score,
+            },
+        }
+    except Exception as e:
+        logger.warning("Failed to save assessment to DB: %s", e)
+        return {"success": False, "message": "Could not save assessment"}
+
+
+@router.get("/assessments/{assessment_id}")
+async def get_assessment(assessment_id: str):
+    assessment_id = sanitize_string(assessment_id, max_length=100)
+    if not assessment_id:
+        raise HTTPException(status_code=400, detail="Invalid assessment ID")
+
+    try:
+        from repositories.repositories import AssessmentRepository, RoadmapRepository
+        from knowledge.loader import knowledge_loader
+        assessment_repo = AssessmentRepository()
+        roadmap_repo = RoadmapRepository()
+
+        db_assess = assessment_repo.get_by_id(assessment_id)
+        if not db_assess:
+            raise HTTPException(status_code=404, detail="Assessment not found")
+
+        role_data = knowledge_loader.get_role(str(db_assess.career_goal)) or {}
+
+        matched = [str(n) for n in (db_assess.matched_skills or [])]
+        missing = [str(n) for n in (db_assess.missing_skills or [])]
+
+        roadmap_data = []
+        db_roadmap = roadmap_repo.get_by_assessment(assessment_id)
+        if db_roadmap:
+            roadmap_data = db_roadmap.steps or []
+
+        return {
+            "success": True,
+            "data": {
+                "assessment_id": str(db_assess.id),
+                "career_goal": str(db_assess.career_goal),
+                "career_description": role_data.get("description", ""),
+                "career_readiness": db_assess.readiness_score,
+                "matched_skills": matched,
+                "missing_skills": missing,
+                "estimated_weeks": db_roadmap.estimated_weeks if db_roadmap else 0,
+                "study_hours": db_assess.weekly_hours,
+                "roadmap": roadmap_data,
+                "created_at": str(db_assess.created_at) if db_assess.created_at else None,
+            },
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.warning("Failed to retrieve assessment: %s", e)
+        raise HTTPException(status_code=500, detail="Failed to retrieve assessment")
 
 
 @router.post("/career/explain")

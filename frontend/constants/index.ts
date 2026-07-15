@@ -7,6 +7,10 @@ export const SUPPORTED_CAREERS = [
   { id: 'appsec_engineer', title: 'Application Security Engineer', icon: '🛡️', color: 'green' },
   { id: 'threat_intel_analyst', title: 'Threat Intelligence Analyst', icon: '🕵️', color: 'yellow' },
   { id: 'forensics_analyst', title: 'Digital Forensics Analyst', icon: '🔬', color: 'orange' },
+  { id: 'security_architect', title: 'Security Architect', icon: '🏗️', color: 'indigo' },
+  { id: 'devsecops_engineer', title: 'DevSecOps Engineer', icon: '⚙️', color: 'cyan' },
+  { id: 'grc_analyst', title: 'GRC Analyst', icon: '📋', color: 'teal' },
+  { id: 'incident_responder', title: 'Incident Responder', icon: '🚨', color: 'rose' },
 ] as const;
 
 export const DIFFICULTY_COLORS: Record<string, string> = {

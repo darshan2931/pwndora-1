@@ -16,29 +16,57 @@
     {
         "career": "Cloud Security Engineer",
         "sequence": ["Linux", "AWS", "IAM", "Docker", "Kubernetes", "Terraform"],
-        "projects": ["Secure AWS Lab", "Cloud Security Lab", "Kubernetes Hardening"],
+        "projects": ["Cloud Security Lab", "Kubernetes Hardening", "IAM Policy Analyzer"],
         "certifications": ["AWS Security Specialty", "CCSK", "Azure Security Engineer"],
         "estimated_duration": 28
     },
     {
         "career": "Application Security Engineer",
         "sequence": ["Python", "JavaScript", "Secure Coding", "OWASP Top 10", "SAST", "DAST", "CI/CD", "Docker"],
-        "projects": ["Secure REST API", "CI/CD Security Pipeline"],
+        "projects": ["Secure REST API", "CI/CD Security Pipeline", "API Security Testing Suite"],
         "certifications": ["CSSLP"],
         "estimated_duration": 26
     },
     {
         "career": "Digital Forensics Analyst",
-        "sequence": ["Windows", "Linux", "Memory Analysis", "Disk Analysis", "Log Analysis"],
-        "projects": ["Memory Investigation"],
+        "sequence": ["Windows", "Linux", "Memory Analysis", "Disk Analysis", "Timeline Analysis", "Log Analysis"],
+        "projects": ["Memory Investigation", "Forensics Timeline Tool"],
         "certifications": ["GCFA", "Blue Team Level 1"],
         "estimated_duration": 28
     },
     {
         "career": "Threat Intelligence Analyst",
-        "sequence": ["MITRE ATT&CK", "Log Analysis", "SIEM", "Python"],
-        "projects": ["Threat Actor Profile", "Threat Feed Dashboard"],
+        "sequence": ["MITRE ATT&CK", "OSINT", "Log Analysis", "SIEM", "Python", "YARA"],
+        "projects": ["Threat Actor Profile", "OSINT Recon Tool", "Threat Intelligence Feed Aggregator"],
         "certifications": ["CTIA", "GCTI"],
         "estimated_duration": 24
+    },
+    {
+        "career": "Security Architect",
+        "sequence": ["Networking", "Firewalls", "Linux", "AWS", "IAM", "Docker", "Kubernetes", "Threat Modeling", "Secure Coding", "Compliance Frameworks"],
+        "projects": ["Zero Trust Network Lab", "Cloud Security Lab", "Enterprise Network Design"],
+        "certifications": ["CISSP", "AWS Security Specialty", "CCSP"],
+        "estimated_duration": 36
+    },
+    {
+        "career": "DevSecOps Engineer",
+        "sequence": ["Linux", "Python", "CI/CD", "Docker", "Kubernetes", "SAST", "DAST", "Terraform", "Secrets Management"],
+        "projects": ["DevSecOps Pipeline Dashboard", "Container Security Scanner", "Secrets Scanner"],
+        "certifications": ["AWS Security Specialty", "Certified Kubernetes Security Specialist"],
+        "estimated_duration": 28
+    },
+    {
+        "career": "GRC Analyst",
+        "sequence": ["Compliance Frameworks", "NIST", "ISO 27001", "Risk Assessment", "Security Auditing", "SOC 2", "Business Continuity"],
+        "projects": ["Compliance Audit Framework", "Incident Response Playbook"],
+        "certifications": ["CISA", "CRISC", "ISO 27001 Lead Implementer"],
+        "estimated_duration": 24
+    },
+    {
+        "career": "Incident Responder",
+        "sequence": ["Linux", "Windows", "Log Analysis", "SIEM", "Incident Response", "Memory Analysis", "Network Forensics", "MITRE ATT&CK"],
+        "projects": ["Incident Response Playbook", "Memory Investigation", "Malware Analysis Sandbox"],
+        "certifications": ["CompTIA Security+", "Blue Team Level 1", "GCIH"],
+        "estimated_duration": 26
     }
 ]

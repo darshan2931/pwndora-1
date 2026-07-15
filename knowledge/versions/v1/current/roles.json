@@ -52,5 +52,41 @@
         "recommended_certifications": ["CTIA", "GCTI"],
         "suggested_projects": ["Threat Actor Profile", "OSINT Investigation", "Threat Feed Dashboard"],
         "estimated_duration": 24
+    },
+    {
+        "role": "Security Architect",
+        "description": "Designs and oversees an organization's security infrastructure and policies.",
+        "required_skills": ["Networking", "Firewalls", "IAM", "AWS", "Docker", "Kubernetes", "Threat Modeling", "Secure Coding"],
+        "optional_skills": ["Terraform", "CI/CD", "Compliance Frameworks"],
+        "recommended_certifications": ["CISSP", "AWS Security Specialty", "CCSP"],
+        "suggested_projects": ["Enterprise Network Design", "Zero Trust Architecture Lab", "Cloud Security Architecture"],
+        "estimated_duration": 36
+    },
+    {
+        "role": "DevSecOps Engineer",
+        "description": "Integrates security into CI/CD pipelines and automates security testing.",
+        "required_skills": ["CI/CD", "Docker", "Kubernetes", "SAST", "DAST", "Linux", "Python", "Terraform"],
+        "optional_skills": ["AWS", "GCP", "Container Security", "Secrets Management"],
+        "recommended_certifications": ["AWS Security Specialty", "Certified Kubernetes Security Specialist"],
+        "suggested_projects": ["DevSecOps Pipeline", "Container Security Scanner", "Infrastructure as Code Audit"],
+        "estimated_duration": 28
+    },
+    {
+        "role": "GRC Analyst",
+        "description": "Manages governance, risk, and compliance programs for organizations.",
+        "required_skills": ["Compliance Frameworks", "Risk Assessment", "Security Auditing", "NIST", "ISO 27001"],
+        "optional_skills": ["SOC 2", "Business Continuity", "Incident Response"],
+        "recommended_certifications": ["CISA", "CRISC", "ISO 27001 Lead Implementer"],
+        "suggested_projects": ["Compliance Gap Analysis", "Risk Register Framework", "Policy Documentation Suite"],
+        "estimated_duration": 24
+    },
+    {
+        "role": "Incident Responder",
+        "description": "Leads the response to security breaches and coordinates recovery efforts.",
+        "required_skills": ["Incident Response", "Log Analysis", "SIEM", "Memory Analysis", "Network Forensics", "Linux", "Windows"],
+        "optional_skills": ["Malware Analysis", "OSINT", "YARA"],
+        "recommended_certifications": ["GCIH", "Blue Team Level 1", "GCFA"],
+        "suggested_projects": ["Incident Response Playbook", "Malware Analysis Lab", " tabletop Exercise"],
+        "estimated_duration": 26
     }
 ]

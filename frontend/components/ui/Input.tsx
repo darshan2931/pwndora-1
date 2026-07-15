@@ -12,9 +12,9 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ label, error, hint, className = '', id, ...props }, ref) => {
     const inputId = id || label?.toLowerCase().replace(/\s+/g, '-');
     return (
-      <div className="w-full">
+      <div className="w-full space-y-1">
         {label && (
-          <label htmlFor={inputId} className="block text-sm font-medium text-gray-700 mb-1.5">
+          <label htmlFor={inputId} className="text-sm font-medium text-gray-700 dark:text-gray-300">
             {label}
           </label>
         )}
@@ -22,14 +22,13 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           ref={ref}
           id={inputId}
           className={`
-            w-full rounded-lg border px-3.5 py-2.5 text-sm
-            transition-colors duration-200
-            placeholder:text-gray-400
-            focus:outline-none focus:ring-2 focus:ring-offset-0
+            w-full rounded-lg border px-4 py-3 text-sm
+            transition-all duration-200 focus:outline-none focus:ring-2 focus-ring-offset-0
+            bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
+            placeholder:text-gray-400 dark:placeholder:text-gray-500
             ${error
-              ? 'border-error focus:ring-error/30 focus:border-error'
-              : 'border-gray-300 focus:ring-primary/30 focus:border-primary'
-            }
+              ? 'border-error focus:ring-error/20 focus:border-error'
+              : 'border-gray-300 dark:border-gray-600 focus:ring-primary/20 focus:border-primary'}
             ${className}
           `.trim()}
           aria-invalid={!!error}
@@ -42,7 +41,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
           </p>
         )}
         {hint && !error && (
-          <p id={`${inputId}-hint`} className="mt-1.5 text-sm text-gray-500">
+          <p id={`${inputId}-hint`} className="mt-1.5 text-sm text-gray-500 dark:text-gray-400">
             {hint}
           </p>
         )}
@@ -63,9 +62,9 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
   ({ label, error, hint, className = '', id, ...props }, ref) => {
     const textareaId = id || label?.toLowerCase().replace(/\s+/g, '-');
     return (
-      <div className="w-full">
+      <div className="w-full space-y-1">
         {label && (
-          <label htmlFor={textareaId} className="block text-sm font-medium text-gray-700 mb-1.5">
+          <label htmlFor={textareaId} className="text-sm font-medium text-gray-700 dark:text-gray-300">
             {label}
           </label>
         )}
@@ -73,14 +72,13 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           ref={ref}
           id={textareaId}
           className={`
-            w-full rounded-lg border px-3.5 py-2.5 text-sm
-            transition-colors duration-200 resize-vertical
-            placeholder:text-gray-400
-            focus:outline-none focus:ring-2 focus:ring-offset-0
+            w-full rounded-lg border px-4 py-3 text-sm
+            transition-all duration-200 focus:outline-none focus:ring-2 focus-ring-offset-0
+            bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
+            placeholder:text-gray-400 dark:placeholder:text-gray-500 resize-vertical
             ${error
-              ? 'border-error focus:ring-error/30 focus:border-error'
-              : 'border-gray-300 focus:ring-primary/30 focus:border-primary'
-            }
+              ? 'border-error focus:ring-error/20 focus:border-error'
+              : 'border-gray-300 dark:border-gray-600 focus:ring-primary/20 focus:border-primary'}
             ${className}
           `.trim()}
           aria-invalid={!!error}
@@ -93,7 +91,7 @@ const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           </p>
         )}
         {hint && !error && (
-          <p id={`${textareaId}-hint`} className="mt-1.5 text-sm text-gray-500">
+          <p id={`${textareaId}-hint`} className="mt-1.5 text-sm text-gray-500 dark:text-gray-400">
             {hint}
           </p>
         )}
@@ -115,9 +113,9 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
   ({ label, error, options, placeholder, className = '', id, ...props }, ref) => {
     const selectId = id || label?.toLowerCase().replace(/\s+/g, '-');
     return (
-      <div className="w-full">
+      <div className="w-full space-y-1">
         {label && (
-          <label htmlFor={selectId} className="block text-sm font-medium text-gray-700 mb-1.5">
+          <label htmlFor={selectId} className="text-sm font-medium text-gray-700 dark:text-gray-300">
             {label}
           </label>
         )}
@@ -125,13 +123,12 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
           ref={ref}
           id={selectId}
           className={`
-            w-full rounded-lg border px-3.5 py-2.5 text-sm
-            transition-colors duration-200 bg-white
-            focus:outline-none focus:ring-2 focus:ring-offset-0
+            w-full rounded-lg border px-4 py-3 text-sm
+            transition-all duration-200 focus:outline-none focus:ring-2 focus-ring-offset-0
+            bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100
             ${error
-              ? 'border-error focus:ring-error/30 focus:border-error'
-              : 'border-gray-300 focus:ring-primary/30 focus:border-primary'
-            }
+              ? 'border-error focus:ring-error/20 focus:border-error'
+              : 'border-gray-300 dark:border-gray-600 focus:ring-primary/20 focus:border-primary'}
             ${className}
           `.trim()}
           aria-invalid={!!error}

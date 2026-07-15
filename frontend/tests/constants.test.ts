@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { SUPPORTED_CAREERS, READINESS_THRESHOLDS, DIFFICULTY_COLORS, MENTOR_SUGGESTED_QUESTIONS } from '@/constants';
 
 describe('Constants', () => {
-  it('has 6 supported careers', () => {
-    expect(SUPPORTED_CAREERS).toHaveLength(6);
+  it('has 10 supported careers', () => {
+    expect(SUPPORTED_CAREERS).toHaveLength(10);
   });
 
   it('each career has id and title', () => {

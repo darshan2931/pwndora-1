@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Navbar from '@/components/Navbar';
 import ErrorBoundary from '@/components/ui/ErrorBoundary';
+import { ThemeProvider } from '@/components/ThemeProvider';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -14,14 +15,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body>
-        <Navbar />
-        <main className="min-h-[calc(100vh-4rem)]">
-          <ErrorBoundary>
-            {children}
-          </ErrorBoundary>
-        </main>
+        <ThemeProvider>
+          <Navbar />
+          <main className="min-h-[calc(100vh-4rem)]">
+            <ErrorBoundary>
+              {children}
+            </ErrorBoundary>
+          </main>
+        </ThemeProvider>
       </body>
     </html>
   );
