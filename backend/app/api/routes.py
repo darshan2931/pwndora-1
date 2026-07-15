@@ -1,9 +1,6 @@
-import json
-import time
 import os
 import shutil
 import logging
-from typing import Dict, Optional
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
@@ -26,7 +23,7 @@ def _get_ai_service():
 
 
 def _get_orchestrator():
-    from orchestrators.career_orchestrator import CareerOrchestrator
+    from orchestrators.career_orchestrator import CareerOrchestrator  # pyrefly: ignore [missing-import]
     ai_svc = None
     try:
         from app.main import get_ai_service
@@ -38,7 +35,7 @@ def _get_orchestrator():
 
 @router.get("/careers")
 async def get_careers():
-    from knowledge.loader import knowledge_loader
+    from knowledge.loader import knowledge_loader  # pyrefly: ignore [missing-import]
     roles = knowledge_loader.get_roles()
     return {
         "success": True,
@@ -51,7 +48,7 @@ async def get_careers():
 
 @router.get("/knowledge/skills")
 async def get_skills():
-    from knowledge.loader import knowledge_loader
+    from knowledge.loader import knowledge_loader  # pyrefly: ignore [missing-import]
     skills = knowledge_loader.get_skills()
     categories = {}
     for skill in skills:
@@ -109,7 +106,7 @@ async def analyze_career(
             except RuntimeError:
                 pass
 
-            from services.resume_service import ResumeService
+            from services.resume_service import ResumeService  # pyrefly: ignore [missing-import]
             resume_svc = ResumeService(ai_service=ai_svc)
             profile = resume_svc.parse(temp_file_path)
             extracted_skills = [s.name for s in profile.skills]
@@ -163,7 +160,7 @@ async def explain_career(request: dict):
     return {"success": True, "data": {"explanation": text, "confidence": confidence}}
 
 
-@router.post("/mentor/chat", response_model=MentorResponse)
+@router.post("/mentor/chat")
 async def mentor_chat(request: dict):
     question = sanitize_string(request.get("question", ""), max_length=500)
     assessment_id = sanitize_string(request.get("assessment_id", ""), max_length=100)
@@ -176,8 +173,8 @@ async def mentor_chat(request: dict):
         raise HTTPException(status_code=503, detail="AI service not available")
 
     from app.domain.models import Assessment as DomainAssessment, Career as DomainCareer, UserProfile as DomainUserProfile, Skill as DomainSkill
-    from repositories.repositories import AssessmentRepository
-    from knowledge.loader import knowledge_loader
+    from repositories.repositories import AssessmentRepository  # pyrefly: ignore [missing-import]
+    from knowledge.loader import knowledge_loader  # pyrefly: ignore [missing-import]
 
     assessment = None
     if assessment_id:
@@ -226,25 +223,27 @@ async def mentor_chat(request: dict):
         )
 
     response = await ai_svc.mentor_chat(assessment, question)
+
+    from schemas.schemas import MentorResponse  # pyrefly: ignore [missing-import]
     return MentorResponse(response=response)
 
 
 @router.get("/projects")
 async def get_projects():
-    from knowledge.loader import knowledge_loader
+    from knowledge.loader import knowledge_loader  # pyrefly: ignore [missing-import]
     projects = knowledge_loader.get_projects()
     return {"success": True, "data": projects}
 
 
 @router.get("/projects/{skill_name}")
 async def get_projects_for_skill(skill_name: str):
-    from knowledge.loader import knowledge_loader
+    from knowledge.loader import knowledge_loader  # pyrefly: ignore [missing-import]
     projects = knowledge_loader.get_projects_for_skill(skill_name)
     return {"success": True, "data": projects}
 
 
 @router.get("/certifications/{role_name}")
 async def get_certifications_for_role(role_name: str):
-    from knowledge.loader import knowledge_loader
+    from knowledge.loader import knowledge_loader  # pyrefly: ignore [missing-import]
     certs = knowledge_loader.get_certifications_for_role(role_name)
     return {"success": True, "data": certs}

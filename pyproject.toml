@@ -29,5 +29,8 @@ dev = [
 line-length = 100
 target-version = "py312"
 
+[tool.pyrefly]
+project_includes = ["backend"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
