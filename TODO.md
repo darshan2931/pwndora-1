@@ -37,12 +37,12 @@
 
 ### Aathira (Frontend Engineer)
 
-- [ ] Scaffold Next.js `app/` directory with layout and global styles
-- [ ] Set up Tailwind theme (colors, fonts, spacing) aligned with brand
-- [ ] Create shared UI primitives: Button, Input, Card, Badge, Modal
-- [ ] Set up path aliases (`@/components`, `@/lib`, etc.)
-- [ ] Configure Vitest with test utilities and helpers
-- [ ] Write landing page (`/`) with hero, features, and CTA
+- [x] Scaffold Next.js `app/` directory with layout and global styles
+- [x] Set up Tailwind theme (colors, fonts, spacing) aligned with brand
+- [x] Create shared UI primitives: Button, Input, Card, Badge, Modal
+- [x] Set up path aliases (`@/components`, `@/lib`, etc.)
+- [x] Configure Vitest with test utilities and helpers
+- [x] Write landing page (`/`) with hero, features, and CTA
 
 ---
 
@@ -91,14 +91,14 @@
 
 ### Aathira (Frontend Engineer)
 
-- [ ] Build Resume Upload page (`/upload`)
-  - [ ] File drag-and-drop zone
-  - [ ] Upload progress indicator
-  - [ ] Manual skill entry fallback
-- [ ] Build Career Assessment page (`/assess`)
-  - [ ] Career selector dropdown
-  - [ ] Weekly hours input
-  - [ ] Results summary card
+- [x] Build Resume Upload page (`/upload`)
+  - [x] File drag-and-drop zone
+  - [x] Upload progress indicator
+  - [x] Manual skill entry fallback
+- [x] Build Career Assessment page (`/assess`)
+  - [x] Career selector dropdown
+  - [x] Weekly hours input
+  - [x] Results summary card
 
 ---
 
@@ -140,28 +140,28 @@
 
 ### Aathira (Frontend Engineer)
 
-- [ ] Build Dashboard page (`/dashboard`)
-  - [ ] Readiness score gauge
-  - [ ] Skill match / gap breakdown chart
-  - [ ] Quick action cards
-- [ ] Build Roadmap page (`/roadmap`)
-  - [ ] Timeline view of weekly steps
-  - [ ] Skill dependency graph
-  - [ ] Project cards linked to each step
-  - [ ] Progress tracking (planned vs completed)
-- [ ] Build Mentor Chat page (`/mentor`)
-  - [ ] Chat message list
-  - [ ] Input bar with send
-  - [ ] Suggested questions carousel
-- [ ] Build Career Explorer page (`/explore`)
-  - [ ] Career cards with readiness indicators
-  - [ ] Skill comparison view
-- [ ] Connect all frontend pages to backend API
-- [ ] Write frontend component tests:
-  - [ ] CareerCard, SkillCard, ProjectCard
-  - [ ] RoadmapTimeline
-  - [ ] ChatWindow
-  - [ ] ResumeUpload
+- [x] Build Dashboard page (`/dashboard`)
+  - [x] Readiness score gauge
+  - [x] Skill match / gap breakdown chart
+  - [x] Quick action cards
+- [x] Build Roadmap page (`/roadmap`)
+  - [x] Timeline view of weekly steps
+  - [x] Skill dependency graph
+  - [x] Project cards linked to each step
+  - [x] Progress tracking (planned vs completed)
+- [x] Build Mentor Chat page (`/mentor`)
+  - [x] Chat message list
+  - [x] Input bar with send
+  - [x] Suggested questions carousel
+- [x] Build Career Explorer page (`/explore`)
+  - [x] Career cards with readiness indicators
+  - [x] Skill comparison view
+- [x] Connect all frontend pages to backend API
+- [x] Write frontend component tests:
+  - [x] CareerCard, SkillCard, ProjectCard
+  - [x] RoadmapTimeline
+  - [x] ChatWindow
+  - [x] ResumeUpload
 
 ---
 
@@ -193,11 +193,11 @@
 
 ### Aathira (Frontend Engineer)
 
-- [ ] Responsive design pass (mobile, tablet, desktop)
-- [ ] Loading states & skeleton screens
-- [ ] Error boundaries & fallback UI
-- [ ] Accessibility audit (keyboard nav, aria labels, contrast)
-- [ ] Performance audit (bundle size, image optimization, lazy loading)
+- [x] Responsive design pass (mobile, tablet, desktop)
+- [x] Loading states & skeleton screens
+- [x] Error boundaries & fallback UI
+- [x] Accessibility audit (keyboard nav, aria labels, contrast)
+- [x] Performance audit (bundle size, image optimization, lazy loading)
 
 ---
 
@@ -225,9 +225,9 @@
 
 ### Aathira
 
-- [ ] Final UI polish pass
-- [ ] Demo walkthrough video / screenshots
-- [ ] Deploy frontend to Vercel production
+- [x] Final UI polish pass
+- [x] Demo walkthrough video / screenshots
+- [x] Deploy frontend to Vercel production
 
 ---
 
