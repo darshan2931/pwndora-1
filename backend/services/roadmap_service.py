@@ -27,7 +27,7 @@ class RoadmapService(IRoadmapService):
     def order_by_prerequisites(self, skills: List[Skill]) -> List[Skill]:
         skill_map = {s.name.lower(): s for s in skills}
         in_degree = {s.name.lower(): 0 for s in skills}
-        adj = {s.name.lower(): [] for s in skills}
+        adj: dict[str, list[str]] = {s.name.lower(): [] for s in skills}
 
         for skill in skills:
             prereqs = self.kb.get_skill_prerequisites(skill.name)

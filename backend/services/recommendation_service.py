@@ -1,7 +1,7 @@
 import logging
 from typing import List
 
-from app.domain.models import Assessment, Career, Project
+from app.domain.models import Assessment
 from knowledge.loader import knowledge_loader
 from services.service_interfaces import RecommendationService as IRecommendationService
 

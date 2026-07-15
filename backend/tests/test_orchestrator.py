@@ -62,6 +62,7 @@ class TestCareerOrchestrator:
     def test_analyze_all_skills(self, orchestrator):
         from knowledge.loader import knowledge_loader
         role = knowledge_loader.get_role("SOC Analyst")
+        assert role is not None
         all_skills = role["required_skills"] + role.get("optional_skills", [])
         assessment, _ = orchestrator.analyze(
             user_skills=all_skills,

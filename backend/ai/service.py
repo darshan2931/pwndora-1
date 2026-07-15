@@ -7,7 +7,7 @@ from typing import Any, Optional
 
 import httpx
 
-from app.domain.models import Assessment, Roadmap, Skill
+from app.domain.models import Assessment, Roadmap
 from ai.demo_data import get_demo_response
 
 logger = logging.getLogger(__name__)
@@ -223,7 +223,7 @@ class ResponseValidator:
             pattern = rf"\b{re.escape(item)}\b"
             if re.search(pattern, text_lower):
                 if item not in allowed_lower:
-                    if item in ["go"] and not re.search(rf"\bgo\b (?:programming|language)", text_lower):
+                    if item in ["go"] and not re.search(r"\bgo\b (?:programming|language)", text_lower):
                         continue
                     logger.warning("Hallucination detected: skill/cert '%s' mentioned but not in allowed context.", item)
                     return False
@@ -288,7 +288,7 @@ class ResponseValidator:
 
     @staticmethod
     def extract_skills_from_json(data: Any) -> dict:
-        result = {"skills": [], "projects": [], "certifications": []}
+        result: dict[str, list[str]] = {"skills": [], "projects": [], "certifications": []}
         if isinstance(data, dict):
             result["skills"] = [
                 s if isinstance(s, str) else str(s)

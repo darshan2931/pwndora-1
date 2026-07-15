@@ -41,8 +41,8 @@ def validate_file(filepath: Path, filename: str) -> list[str]:
     required = REQUIRED_FIELDS.get(filename, [])
 
     data, load_err = load_json(filepath)
-    if load_err:
-        return [f"{filename}: {load_err}"]
+    if data is None:
+        return [f"{filename}: {load_err or 'unknown load error'}"]
 
     for i, item in enumerate(data):
         for field in required:

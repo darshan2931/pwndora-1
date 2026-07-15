@@ -1,19 +1,19 @@
 from typing import List
 
-from app.domain.models import Skill, Career, UserProfile, Assessment, Roadmap, Project
+from app.domain.models import UserProfile, Assessment, Roadmap
 
 
 class ResumeService:
     def parse(self, file_path: str) -> UserProfile:
-        pass
+        raise NotImplementedError()
 
     def extract_skills(self, text: str) -> list:
-        pass
+        raise NotImplementedError()
 
 
 class CareerService:
     def analyze(self, user_skills: list[str], career_goal: str) -> Assessment:
-        pass
+        raise NotImplementedError()
 
     def calculate_readiness(self, matched: int, total: int) -> int:
         if total == 0:
@@ -23,15 +23,15 @@ class CareerService:
 
 class RoadmapService:
     def generate(self, assessment: Assessment, study_hours: int = 10) -> Roadmap:
-        pass
+        raise NotImplementedError()
 
     def order_by_prerequisites(self, skills: list) -> list:
-        pass
+        raise NotImplementedError()
 
 
 class RecommendationService:
     def recommend_projects(self, assessment: Assessment, max_projects: int = 5) -> List[dict]:
-        pass
+        raise NotImplementedError()
 
     def recommend_certifications(self, assessment: Assessment) -> List[dict]:
-        pass
+        raise NotImplementedError()

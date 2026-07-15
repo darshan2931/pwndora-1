@@ -1,7 +1,7 @@
 import os
 import shutil
 import logging
-from typing import Dict
+from typing import Dict, cast
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
@@ -213,7 +213,7 @@ async def mentor_chat(request: dict):
                     target_career=career,
                     matched_skills=matched_skills,
                     missing_skills=missing_skills,
-                    readiness_score=db_assess.readiness_score,
+                    readiness_score=cast(int, db_assess.readiness_score),
                 )
         except Exception as e:
             logger.warning("Failed to load assessment context from DB: %s", e)
@@ -228,7 +228,6 @@ async def mentor_chat(request: dict):
 
     response = await ai_svc.mentor_chat(assessment, question)
 
-    from schemas.schemas import MentorResponse  # pyrefly: ignore [missing-import]
     return MentorResponse(response=response)
 
 

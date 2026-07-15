@@ -30,7 +30,7 @@ VALID_CATEGORIES = {
 class KnowledgeLoader:
     def __init__(self, knowledge_dir: Path = KNOWLEDGE_DIR):
         self.knowledge_dir = knowledge_dir
-        self._cache: Dict[str, list] = {}
+        self._cache: Dict[str, tuple[list, float]] = {}
 
     def _load(self, filename: str) -> list:
         if filename in self._cache:
@@ -54,7 +54,7 @@ class KnowledgeLoader:
         self._cache[filename] = (data, time.time())
         return data
 
-    def invalidate_cache(self, filename: str = None):
+    def invalidate_cache(self, filename: Optional[str] = None):
         if filename:
             self._cache.pop(filename, None)
         else:

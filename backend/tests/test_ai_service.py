@@ -1,4 +1,3 @@
-import json
 import sys
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -15,7 +14,6 @@ from ai.service import (
     PromptBuilder,
     ResponseValidator,
     _cache_key,
-    _response_cache,
 )
 
 

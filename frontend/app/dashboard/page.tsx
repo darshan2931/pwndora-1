@@ -141,7 +141,7 @@ export default function DashboardPage() {
             </div>
           </Card>
 
-          {data.estimated_weeks > 0 && (
+          {data.estimated_weeks !== undefined && data.estimated_weeks > 0 && (
             <Card hover>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">

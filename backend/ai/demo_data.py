@@ -1,4 +1,6 @@
-DEMO_RESPONSES = {
+from typing import Any, overload, Literal
+
+DEMO_RESPONSES: dict[str, Any] = {
     "resume_extraction": {
         "skills": ["Linux", "Python", "Networking", "TCP/IP"],
         "projects": ["Port Scanner", "Log Parser"],
@@ -38,8 +40,6 @@ DEMO_RESPONSES = {
     ),
 }
 
-
-from typing import Any, overload, Literal
 
 @overload
 def get_demo_response(prompt_type: Literal["resume"], **kwargs) -> dict[str, list[str]]: ...

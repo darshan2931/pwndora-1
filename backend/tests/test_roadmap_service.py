@@ -5,7 +5,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from app.domain.models import Assessment, Career, Roadmap, Skill, UserProfile
+from app.domain.models import Roadmap, Skill
 from services.career_service import CareerService
 from services.roadmap_service import RoadmapService
 

@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.routes import router
 from ai.service import AIClient, AIService
 from core.middleware import AccessLogMiddleware
 from utils.middleware.rate_limiter import RateLimitMiddleware
@@ -67,9 +68,6 @@ app.add_middleware(AccessLogMiddleware)
 
 app.add_middleware(RequestLoggingMiddleware)
 app.add_middleware(RateLimitMiddleware, requests_per_minute=60, burst=10)
-
-
-from app.api.routes import router
 
 app.include_router(router, prefix="/api/v1")
 

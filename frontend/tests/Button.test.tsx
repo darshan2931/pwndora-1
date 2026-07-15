@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import Button from '@/components/ui/Button';
 
@@ -23,7 +23,7 @@ describe('Button', () => {
 
   it('is disabled when loading', () => {
     render(<Button loading>Loading</Button>);
-    const btn = screen.getByLabelText('Loading');
+    const btn = screen.getByText('Loading');
     expect(btn.hasAttribute('disabled')).toBe(true);
   });
 

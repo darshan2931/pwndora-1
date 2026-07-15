@@ -1,5 +1,5 @@
 import logging
-from typing import Optional, Tuple
+from typing import Tuple
 
 from app.domain.models import Assessment, Roadmap
 from knowledge.loader import knowledge_loader

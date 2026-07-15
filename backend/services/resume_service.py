@@ -58,13 +58,14 @@ class ResumeService(IResumeService):
                 
         # 2. AI enrichment / fallback if few skills are found and AI service is available
         if len(extracted_names) < 3 and self.ai_service:
+            ai_svc = self.ai_service
             try:
                 import asyncio
                 from concurrent.futures import ThreadPoolExecutor
                 
                 with ThreadPoolExecutor(max_workers=1) as executor:
                     future = executor.submit(
-                        lambda: asyncio.run(self.ai_service.extract_skills_from_resume(text))
+                        lambda: asyncio.run(ai_svc.extract_skills_from_resume(text))
                     )
                     ai_result = future.result()
                     
