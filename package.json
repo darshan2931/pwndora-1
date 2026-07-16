@@ -1,24 +1,23 @@
 {
-  "name": "cyberpath-ai-frontend",
-  "version": "0.1.0",
+  "name": "cyberpath-ai",
+  "version": "1.0.0",
   "private": true,
+  "description": "AI-Powered Cybersecurity Career Intelligence Platform",
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "next lint",
-    "test": "vitest"
+    "dev": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "start": "cd frontend && npm start",
+    "lint": "cd frontend && npm run lint",
+    "test": "cd frontend && npm test",
+    "backend": "cd backend && uvicorn app.main:app --reload",
+    "backend:prod": "cd backend && uvicorn app.main:app --host 0.0.0.0 --port 8000",
+    "docker:up": "docker-compose up -d --build",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f",
+    "lint:backend": "cd backend && ruff check .",
+    "test:backend": "cd backend && pytest"
   },
-  "dependencies": {
-    "next": "^14.0",
-    "react": "^18.3",
-    "react-dom": "^18.3"
-  },
-  "devDependencies": {
-    "@types/react": "^18.3",
-    "@types/node": "^20",
-    "typescript": "^5.0",
-    "tailwindcss": "^3.4",
-    "vitest": "^2.0"
+  "engines": {
+    "node": ">=18"
   }
 }

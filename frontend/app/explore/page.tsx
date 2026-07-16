@@ -9,6 +9,7 @@ import { SUPPORTED_CAREERS } from '@/constants';
 import { Career } from '@/types';
 import Link from 'next/link';
 import { getCareers } from '@/services/api';
+import { useToast } from '@/components/ui';
 
 const careerDescriptions: Record<string, { description: string; icon: string; skills: string[] }> = {
   'SOC Analyst': {
@@ -111,7 +112,7 @@ export default function ExplorePage() {
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setSelectedSkill(null)}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${!selectedSkill ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
+            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-1 ${!selectedSkill ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
           >
             All Careers
           </button>
@@ -119,7 +120,7 @@ export default function ExplorePage() {
             <button
               key={skill}
               onClick={() => setSelectedSkill(selectedSkill === skill ? null : skill)}
-              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${selectedSkill === skill ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-1 ${selectedSkill === skill ? 'bg-primary text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
             >
               {skill}
             </button>

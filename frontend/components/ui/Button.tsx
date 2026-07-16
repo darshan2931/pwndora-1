@@ -13,12 +13,12 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantStyles: Record<Variant, string> = {
-  primary: 'bg-primary text-white hover:bg-blue-700 focus:ring-blue-500',
-  secondary: 'bg-secondary text-white hover:bg-purple-700 focus:ring-purple-500',
-  accent: 'bg-accent text-white hover:bg-emerald-700 focus:ring-emerald-500',
-  outline: 'border-2 border-primary text-primary hover:bg-blue-50 dark:hover:bg-blue-900/20 focus:ring-blue-500',
-  ghost: 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100 focus:ring-gray-400',
-  danger: 'bg-error text-white hover:bg-red-700 focus:ring-red-500',
+  primary: 'bg-primary text-white hover:bg-primary-dark focus:ring-primary active:scale-[0.98]',
+  secondary: 'bg-secondary text-white hover:bg-secondary-dark focus:ring-secondary active:scale-[0.98]',
+  accent: 'bg-accent text-white hover:bg-accent-dark focus:ring-accent active:scale-[0.98]',
+  outline: 'border-2 border-primary text-primary hover:bg-primary/5 dark:hover:bg-primary/10 focus:ring-primary active:scale-[0.98]',
+  ghost: 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-900 dark:hover:text-gray-100 focus:ring-gray-400 active:scale-[0.98]',
+  danger: 'bg-error text-white hover:bg-error-dark focus:ring-error active:scale-[0.98]',
 };
 
 const sizeStyles: Record<Size, string> = {
@@ -33,15 +33,15 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         disabled={disabled || loading}
-        className={`
-          inline-flex items-center justify-center font-medium rounded-lg
-          transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2
-          disabled:opacity-50 disabled:cursor-not-allowed
-          ${variantStyles[variant]}
-          ${sizeStyles[size]}
-          ${fullWidth ? 'w-full' : ''}
-          ${className}
-        `.trim()}
+        className={[
+          'inline-flex items-center justify-center font-medium rounded-lg',
+          'transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2',
+          'disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100',
+          variantStyles[variant],
+          sizeStyles[size],
+          fullWidth ? 'w-full' : '',
+          className,
+        ].filter(Boolean).join(' ')}
         aria-busy={loading}
         {...props}
       >

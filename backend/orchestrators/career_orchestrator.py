@@ -64,7 +64,7 @@ class CareerOrchestrator:
                 }
                 for step in roadmap.steps
             ],
-            "projects": projects,
+            "recommended_projects": projects,
             "estimated_weeks": roadmap.estimated_weeks,
             "ai_summary": ai_summary,
             "confidence": confidence,

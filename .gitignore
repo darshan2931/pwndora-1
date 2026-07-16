@@ -15,13 +15,16 @@ out/
 
 # Environment
 .env
-.env.local
+.env.*
+*.env
+!.env.example
 
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
 
 # OS
 .DS_Store
@@ -34,3 +37,14 @@ coverage/
 .mypy_cache/
 .ruff_cache/
 pgdata/
+
+# Backend temp
+backend/temp_uploads/
+backend/data/
+
+# Frontend
+frontend/.next/
+frontend/out/
+
+# Docker
+docker-compose.override.yml

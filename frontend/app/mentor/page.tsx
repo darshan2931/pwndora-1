@@ -6,8 +6,10 @@ import { Card } from '@/components/ui/Card';
 import { MENTOR_SUGGESTED_QUESTIONS } from '@/constants';
 import { MentorMessage } from '@/types';
 import { mentorChat } from '@/services/api';
+import { useToast } from '@/components/ui';
 
 export default function MentorPage() {
+  const { addToast } = useToast();
   const [messages, setMessages] = useState<MentorMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -43,12 +45,17 @@ export default function MentorPage() {
         timestamp: Date.now(),
       };
       setMessages(prev => [...prev, assistantMessage]);
+      addToast({
+        title: 'Message Sent',
+        description: 'Your message has been sent successfully.',
+        type: 'success'
+      });
     } catch {
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: 'I apologize, but I encountered an error. Please check your connection and try again.',
-        timestamp: Date.now(),
-      }]);
+      addToast({
+        title: 'Error',
+        description: 'Failed to send message. Please check your connection and try again.',
+        type: 'error'
+      });
     } finally {
       setLoading(false);
     }
@@ -68,7 +75,7 @@ export default function MentorPage() {
         <p className="page-subtitle">Ask questions about cybersecurity careers, skills, and certifications.</p>
       </div>
 
-      <Card className="flex-1 flex flex-col overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all">
+      <Card className="flex-1 flex flex-col overflow-hidden">
         <div className="flex-1 overflow-y-auto p-4 space-y-4" role="log" aria-label="Chat messages" aria-live="polite">
           {messages.length === 0 && (
             <div className="text-center py-16">

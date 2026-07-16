@@ -9,6 +9,7 @@ import Skeleton, { SkeletonDashboard } from '@/components/ui/Skeleton';
 import { AssessmentData } from '@/types';
 import { READINESS_THRESHOLDS, READINESS_LABELS } from '@/constants';
 import { getAssessment } from '@/services/api';
+import { useToast } from '@/components/ui';
 
 function ReadinessGauge({ score }: { score: number }) {
   const radius = 70;
@@ -21,14 +22,20 @@ function ReadinessGauge({ score }: { score: number }) {
     : 'low';
   const label = READINESS_LABELS[level];
 
+  const gaugeColors = {
+    high: 'var(--color-accent)',
+    medium: 'var(--color-warning)',
+    low: 'var(--color-error)',
+  };
+
   return (
     <div className="flex flex-col items-center">
       <div className="relative w-44 h-44">
         <svg className="w-full h-full -rotate-90" viewBox="0 0 160 160" aria-hidden="true">
-          <circle cx="80" cy="80" r={radius} fill="none" stroke="#e5e7eb" className="dark:stroke-gray-700" strokeWidth={stroke} />
+          <circle cx="80" cy="80" r={radius} fill="none" className="stroke-gray-200 dark:stroke-gray-700" strokeWidth={stroke} />
           <circle
             cx="80" cy="80" r={radius} fill="none"
-            stroke={level === 'high' ? '#10B981' : level === 'medium' ? '#F59E0B' : '#EF4444'}
+            stroke={gaugeColors[level]}
             strokeWidth={stroke}
             strokeLinecap="round"
             strokeDasharray={circumference}
@@ -60,6 +67,7 @@ function SkillBar({ skills, type }: { skills: string[]; type: 'matched' | 'missi
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { addToast } = useToast();
   const [data, setData] = useState<AssessmentData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -87,11 +95,17 @@ export default function DashboardPage() {
             } as AssessmentData));
           }
         })
-        .catch(() => {});
+        .catch(() => {
+          addToast({
+            title: 'Error',
+            description: 'Failed to load assessment data. Please try again.',
+            type: 'error'
+          });
+        });
     }
 
     setLoading(false);
-  }, []);
+  }, [addToast]);
 
   if (loading) {
     return (
@@ -141,8 +155,8 @@ export default function DashboardPage() {
             className="hover:shadow-lg hover:-translate-y-1 transition-all"
           >
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-green-100 dark:bg-green-900/30 rounded-xl flex items-center justify-center">
-                <svg className="w-5 h-5 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <div className="w-10 h-10 bg-accent/10 dark:bg-accent/20 rounded-xl flex items-center justify-center">
+                <svg className="w-5 h-5 text-accent-dark dark:text-accent-light" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                 </svg>
               </div>
@@ -158,8 +172,8 @@ export default function DashboardPage() {
             className="hover:shadow-lg hover:-translate-y-1 transition-all"
           >
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-xl flex items-center justify-center">
-                <svg className="w-5 h-5 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <div className="w-10 h-10 bg-error/10 dark:bg-error/20 rounded-xl flex items-center justify-center">
+                <svg className="w-5 h-5 text-error-dark dark:text-error-light" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
                 </svg>
               </div>
@@ -176,8 +190,8 @@ export default function DashboardPage() {
               className="hover:shadow-lg hover:-translate-y-1 transition-all"
             >
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-xl flex items-center justify-center">
-                  <svg className="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <div className="w-10 h-10 bg-primary/10 dark:bg-primary/20 rounded-xl flex items-center justify-center">
+                  <svg className="w-5 h-5 text-primary-dark dark:text-primary-light" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
@@ -195,8 +209,8 @@ export default function DashboardPage() {
               className="hover:shadow-lg hover:-translate-y-1 transition-all"
             >
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 rounded-xl flex items-center justify-center">
-                  <svg className="w-5 h-5 text-purple-600 dark:text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <div className="w-10 h-10 bg-secondary/10 dark:bg-secondary/20 rounded-xl flex items-center justify-center">
+                  <svg className="w-5 h-5 text-secondary-dark dark:text-secondary-light" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342" />
                   </svg>
                 </div>

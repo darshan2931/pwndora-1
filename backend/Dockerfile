@@ -9,6 +9,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
+ENV PYTHONPATH=/app
 RUN mkdir -p /app/data && chown -R appuser:appgroup /app
 
 EXPOSE 8000

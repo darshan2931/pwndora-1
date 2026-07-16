@@ -133,7 +133,7 @@ export default function Home() {
       </section>
 
       <section className="py-16">
-        <div className="bg-gradient-to-r from-primary to-blue-700 text-white text-center p-12 rounded-xl">
+        <div className="bg-gradient-to-r from-primary to-primary-dark dark:from-primary/80 dark:to-secondary/60 text-white text-center p-12 rounded-xl">
           <h2 className="text-3xl font-bold mb-4">Ready to Start Your Journey?</h2>
           <p className="text-blue-100 mb-8 max-w-lg mx-auto">
             Join thousands of cybersecurity professionals who started with a simple skill assessment.
