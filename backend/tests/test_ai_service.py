@@ -260,7 +260,7 @@ class TestAIService:
         with patch.object(client, "chat_with_history", return_value="Great question!"):
             await service.mentor_chat(sample_assessment, "Question 1", session_id="test-session")
             await service.mentor_chat(sample_assessment, "Question 2", session_id="test-session")
-            assert len(service._conversation_history["test-session"]) == 4
+            assert len(service._conversation_history["test-session"][0]) == 4
 
     def test_clear_session(self):
         client = AIClient(api_keys=["test-key"])

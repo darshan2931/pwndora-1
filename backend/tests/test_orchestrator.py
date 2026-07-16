@@ -49,7 +49,7 @@ class TestCareerOrchestrator:
         assert "matched_skills" in result
         assert "missing_skills" in result
         assert "roadmap" in result
-        assert "projects" in result
+        assert "recommended_projects" in result
         assert "estimated_weeks" in result
 
     def test_analyze_readiness_partial(self, orchestrator):
