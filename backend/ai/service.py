@@ -2,6 +2,8 @@ import hashlib
 import json
 import logging
 import re
+import time
+from collections import OrderedDict
 from pathlib import Path
 from typing import Any, Optional
 
@@ -17,8 +19,10 @@ PROMPTS_DIR = Path(__file__).parent / "prompts"
 MAX_RETRIES = 2
 TIMEOUT_SECONDS = 30
 
-_response_cache: dict[str, tuple[str, float]] = {}
 CACHE_TTL = 300
+MAX_CACHE_SIZE = 500
+
+_response_cache: OrderedDict[str, tuple[str, float]] = OrderedDict()
 
 
 def _cache_key(prefix: str, *args) -> str:
@@ -306,24 +310,44 @@ class ResponseValidator:
 
 
 class AIService:
+    MAX_SESSIONS = 100
+    SESSION_TTL = 3600  # 1 hour
+
     def __init__(self, client: AIClient):
         self.client = client
         self.prompt_builder = PromptBuilder()
         self.validator = ResponseValidator()
-        self._conversation_history: dict[str, list[dict]] = {}
+        self._conversation_history: dict[str, tuple[list[dict], float]] = {}
 
     def _get_cache(self, key: str) -> Optional[str]:
-        import time
         if key in _response_cache:
             value, ts = _response_cache[key]
             if time.time() - ts < CACHE_TTL:
+                _response_cache.move_to_end(key)
                 return value
             del _response_cache[key]
         return None
 
     def _set_cache(self, key: str, value: str):
-        import time
         _response_cache[key] = (value, time.time())
+        _response_cache.move_to_end(key)
+        while len(_response_cache) > MAX_CACHE_SIZE:
+            _response_cache.popitem(last=False)
+
+    def _get_session(self, session_id: str) -> list[dict]:
+        if session_id in self._conversation_history:
+            history, ts = self._conversation_history[session_id]
+            if time.time() - ts < self.SESSION_TTL:
+                self._conversation_history[session_id] = (history, time.time())
+                return history
+            del self._conversation_history[session_id]
+        return []
+
+    def _save_session(self, session_id: str, history: list[dict]):
+        self._conversation_history[session_id] = (history, time.time())
+        while len(self._conversation_history) > self.MAX_SESSIONS:
+            oldest = min(self._conversation_history, key=lambda k: self._conversation_history[k][1])
+            del self._conversation_history[oldest]
 
     async def extract_skills_from_resume(self, resume_text: str) -> dict:
         ck = _cache_key("resume", resume_text[:200])
@@ -385,7 +409,7 @@ class AIService:
 
     async def mentor_chat(self, assessment: Assessment, question: str, session_id: str = "default") -> str:
         system = _load_prompt("mentor")
-        history = self._conversation_history.get(session_id, [])
+        history = self._get_session(session_id)
         history.append({"role": "user", "content": question})
 
         context_prompt = (
@@ -398,12 +422,12 @@ class AIService:
         )
 
         try:
-            full_history = [{"role": "user", "content": context_prompt}] if not history else history
+            full_history = [{"role": "user", "content": context_prompt}] if len(history) <= 1 else history
             response = await self.client.chat_with_history(full_history, system)
             history.append({"role": "assistant", "content": response})
             if len(history) > 20:
                 history = history[-20:]
-            self._conversation_history[session_id] = history
+            self._save_session(session_id, history)
             return response
         except RuntimeError as e:
             logger.warning("AI unavailable, using demo data: %s", e)

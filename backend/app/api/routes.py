@@ -339,15 +339,22 @@ async def explain_career(request: dict):
     if not career_goal:
         raise HTTPException(status_code=400, detail="career_goal is required")
 
-    try:
-        ai_svc = _get_ai_service()
-    except RuntimeError:
-        raise HTTPException(status_code=503, detail="AI service not available")
-
     orchestrator = _get_orchestrator()
     assessment, _ = orchestrator.analyze(user_skills, career_goal)
 
-    text, confidence = await ai_svc.explain_career(assessment)
+    ai_svc = None
+    try:
+        ai_svc = _get_ai_service()
+    except RuntimeError:
+        pass
+
+    if ai_svc:
+        text, confidence = await ai_svc.explain_career(assessment)
+    else:
+        from ai.demo_data import get_demo_response
+        text = get_demo_response("career")
+        confidence = 0.5
+
     return {"success": True, "data": {"explanation": text, "confidence": confidence}}
 
 
@@ -358,10 +365,11 @@ async def mentor_chat(request: dict):
     if not question:
         raise HTTPException(status_code=400, detail="Question is required")
 
+    ai_svc = None
     try:
         ai_svc = _get_ai_service()
     except RuntimeError:
-        raise HTTPException(status_code=503, detail="AI service not available")
+        pass
 
     from app.domain.models import Assessment as DomainAssessment, Career as DomainCareer, UserProfile as DomainUserProfile, Skill as DomainSkill
     from repositories.repositories import AssessmentRepository  # pyrefly: ignore [missing-import]
@@ -416,7 +424,11 @@ async def mentor_chat(request: dict):
             ),
         )
 
-    response = await ai_svc.mentor_chat(assessment, question)
+    if ai_svc:
+        response = await ai_svc.mentor_chat(assessment, question)
+    else:
+        from ai.demo_data import get_demo_response
+        response = get_demo_response("mentor", question=question)
 
     return MentorResponse(response=response)
 
@@ -440,3 +452,12 @@ async def get_certifications_for_role(role_name: str):
     from knowledge.loader import knowledge_loader  # pyrefly: ignore [missing-import]
     certs = knowledge_loader.get_certifications_for_role(role_name)
     return {"success": True, "data": certs}
+
+
+@router.get("/learning-paths/{career}")
+async def get_learning_path(career: str):
+    from knowledge.loader import knowledge_loader  # pyrefly: ignore [missing-import]
+    path = knowledge_loader.get_learning_path(career)
+    if not path:
+        raise HTTPException(status_code=404, detail="Learning path not found")
+    return {"success": True, "data": path}

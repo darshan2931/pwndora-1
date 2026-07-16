@@ -11,7 +11,6 @@ from app.api.routes import router
 from ai.service import AIClient, AIService
 from core.middleware import AccessLogMiddleware
 from utils.middleware.rate_limiter import RateLimitMiddleware
-from utils.middleware.logging_middleware import RequestLoggingMiddleware
 
 load_dotenv()
 
@@ -70,7 +69,6 @@ app.add_middleware(
 )
 app.add_middleware(AccessLogMiddleware)
 
-app.add_middleware(RequestLoggingMiddleware)
 app.add_middleware(RateLimitMiddleware, requests_per_minute=60, burst=10)
 
 app.include_router(router, prefix="/api/v1")
@@ -82,7 +80,7 @@ async def global_exception_handler(request, exc):
     from fastapi.responses import JSONResponse
     return JSONResponse(
         status_code=500,
-        content={"success": False, "message": "Internal server error", "errors": [str(exc)]},
+        content={"success": False, "message": "Internal server error"},
     )
 
 
