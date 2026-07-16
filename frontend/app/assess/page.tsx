@@ -8,9 +8,11 @@ import { Select, Textarea } from '@/components/ui/Input';
 import Badge from '@/components/ui/Badge';
 import { SUPPORTED_CAREERS } from '@/constants';
 import { analyzeCareer, saveAssessment } from '@/services/api';
+import { useToast } from '@/components/ui';
 
 export default function AssessPage() {
   const router = useRouter();
+  const { addToast } = useToast();
   const [careerGoal, setCareerGoal] = useState('');
   const [studyHours, setStudyHours] = useState(10);
   const [manualSkills, setManualSkills] = useState('');
@@ -24,11 +26,10 @@ export default function AssessPage() {
 
   const handleSubmit = async () => {
     if (!manualSkills.trim()) {
-      setError('Please enter at least one skill.');
+      addToast({ title: 'Error', description: 'Please enter at least one skill.', type: 'error' });
       return;
     }
     setStep('loading');
-    setError('');
 
     const formData = new FormData();
     formData.append('career_goal', careerGoal);
@@ -57,13 +58,26 @@ export default function AssessPage() {
           }
         }).catch(() => {});
 
-        router.push('/dashboard');
+        setTimeout(() => router.push('/dashboard'), 400);
+        addToast({
+          title: 'Success',
+          description: 'Analysis completed successfully!',
+          type: 'success'
+        });
       } else {
-        setError('Analysis failed.');
+        addToast({
+          title: 'Error',
+          description: 'Analysis failed. Please try again.',
+          type: 'error'
+        });
         setStep('skills');
       }
     } catch {
-      setError('Failed to analyze. Please try again.');
+      addToast({
+        title: 'Error',
+        description: 'Failed to analyze. Please try again.',
+        type: 'error'
+      });
       setStep('skills');
     }
   };

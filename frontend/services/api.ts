@@ -1,8 +1,4 @@
 import {
-  Assessment,
-  Career,
-  Project,
-  Skill,
   CareerAnalysisResponse,
   CareersResponse,
   ProjectsResponse,
@@ -11,15 +7,20 @@ import {
   CertificationsResponse,
 } from '@/types';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api/v1';
+const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL || '';
+const API_PREFIX = '/api/v1';
 
-async function request<T>(url: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE}${url}`, {
-    ...options,
-    headers: {
-      ...options?.headers,
-    },
-  });
+async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const headers = { ...options?.headers } as Record<string, string>;
+
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  const url = API_ORIGIN ? `${API_ORIGIN}${API_PREFIX}${path}` : `${API_PREFIX}${path}`;
+
+  const res = await fetch(url, { ...options, headers });
   if (!res.ok) {
     const error = await res.json().catch(() => ({ detail: 'Request failed' }));
     throw new Error(error.detail || `HTTP ${res.status}`);

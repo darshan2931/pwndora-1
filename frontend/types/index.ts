@@ -92,9 +92,16 @@ export interface ProjectsResponse {
   data: Project[];
 }
 
+export interface SkillCategory {
+  name: string;
+  skills: string[];
+}
+
 export interface SkillsResponse {
   success: boolean;
-  data: Skill[];
+  data: {
+    categories: SkillCategory[];
+  };
 }
 
 export interface CertificationsResponse {
@@ -103,10 +110,10 @@ export interface CertificationsResponse {
 }
 
 export interface Certification {
-  id: string;
   name: string;
   vendor: string;
   difficulty: string;
   recommended_for: string[];
-  prerequisites: string[];
+  prerequisites?: string[];
+  study_resources?: string[];
 }

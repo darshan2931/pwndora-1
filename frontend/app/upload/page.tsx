@@ -7,11 +7,13 @@ import { Card } from '@/components/ui/Card';
 import { Select, Textarea } from '@/components/ui/Input';
 import { SUPPORTED_CAREERS } from '@/constants';
 import { analyzeCareer, saveAssessment } from '@/services/api';
+import { useToast } from '@/components/ui';
 
 type UploadMode = 'file' | 'manual';
 
 function UploadForm() {
   const router = useRouter();
+  const { addToast } = useToast();
   const searchParams = useSearchParams();
   const preselectedCareer = searchParams.get('career') || '';
 
@@ -66,12 +68,11 @@ function UploadForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!careerGoal) { setError('Please select a target career.'); return; }
-    if (mode === 'file' && !file && !manualSkills) { setError('Please upload a resume or enter skills manually.'); return; }
-    if (mode === 'manual' && !manualSkills.trim()) { setError('Please enter your skills.'); return; }
+    if (!careerGoal) { addToast({ title: 'Error', description: 'Please select a target career.', type: 'error' }); return; }
+    if (mode === 'file' && !file && !manualSkills) { addToast({ title: 'Error', description: 'Please upload a resume or enter skills manually.', type: 'error' }); return; }
+    if (mode === 'manual' && !manualSkills.trim()) { addToast({ title: 'Error', description: 'Please enter your skills.', type: 'error' }); return; }
 
     setLoading(true);
-    setError('');
     setProgress(0);
 
     const progressInterval = setInterval(() => {
@@ -110,13 +111,26 @@ function UploadForm() {
         }).catch(() => {});
 
         setTimeout(() => router.push('/dashboard'), 400);
+        addToast({
+          title: 'Success',
+          description: 'Analysis completed successfully!',
+          type: 'success'
+        });
       } else {
-        setError('Analysis failed. Please try again.');
+        addToast({
+          title: 'Error',
+          description: 'Analysis failed. Please try again.',
+          type: 'error'
+        });
         setProgress(0);
       }
     } catch {
       clearInterval(progressInterval);
-      setError('Failed to analyze your profile. Please try again.');
+      addToast({
+        title: 'Error',
+        description: 'Failed to analyze your profile. Please try again.',
+        type: 'error'
+      });
       setProgress(0);
     } finally {
       setLoading(false);
@@ -133,11 +147,11 @@ function UploadForm() {
       </div>
 
       <form onSubmit={handleSubmit}>
-        <Card padding="lg" className="space-y-6 hover:shadow-lg hover:-translate-y-1 transition-all">
+        <Card padding="lg" className="space-y-6">
           <Select
             label="Target Career"
             value={careerGoal}
-            onChange={e => { setCareerGoal(e.target.value); setError(''); }}
+            onChange={e => { setCareerGoal(e.target.value); }}
             options={SUPPORTED_CAREERS.map(c => ({ value: c.title, label: c.title }))}
             placeholder="Select a career path..."
           />
@@ -233,21 +247,13 @@ function UploadForm() {
             <Textarea
               label="Your Skills (comma-separated)"
               value={manualSkills}
-              onChange={e => { setManualSkills(e.target.value); setError(''); }}
+              onChange={e => { setManualSkills(e.target.value); }}
               placeholder="e.g. Linux, Python, TCP/IP, SIEM, Nmap, Incident Response"
               rows={4}
               hint="Enter skills you currently have. They will be matched against our knowledge base."
             />
           )}
 
-          {error && (
-            <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-sm text-error" role="alert">
-              <svg className="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-              </svg>
-              {error}
-            </div>
-          )}
 
           {loading && progress > 0 && (
             <div className="space-y-2">

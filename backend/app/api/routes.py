@@ -2,12 +2,17 @@ import os
 import uuid
 import shutil
 import logging
-from typing import Dict, cast
+from typing import Dict, cast, Optional
 
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile, Depends, status
+from sqlalchemy.orm import Session
+from sqlalchemy.exc import OperationalError
 
-from schemas.schemas import MentorResponse
+from database.session import get_db
+from models.sqlalchemy_models import User
+from schemas.schemas import MentorResponse, UserSignUp, UserLogin, UserResponse
 from utils.validators import sanitize_string, sanitize_filename, validate_skills_list, validate_career_goal, validate_study_hours
+from utils.auth import get_password_hash, verify_password, create_access_token, get_current_user, get_required_current_user
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -33,6 +38,80 @@ def _get_orchestrator():
     except RuntimeError:
         pass
     return CareerOrchestrator(ai_service=ai_svc)
+
+
+@router.post("/auth/signup")
+async def signup(payload: UserSignUp, db: Session = Depends(get_db)):
+    try:
+        existing_user = db.query(User).filter(User.email == payload.email).first()
+        if existing_user:
+            raise HTTPException(status_code=400, detail="Email already registered")
+        
+        hashed_pwd = get_password_hash(payload.password)
+        user = User(
+            name=payload.name,
+            email=payload.email,
+            hashed_password=hashed_pwd
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        return {
+            "success": True,
+            "data": {
+                "id": str(user.id),
+                "name": user.name,
+                "email": user.email
+            }
+        }
+    except OperationalError:
+        raise HTTPException(status_code=503, detail="Database is unavailable. Please try again later.")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Signup failed: %s", e)
+        raise HTTPException(status_code=500, detail="Registration failed")
+
+
+@router.post("/auth/login")
+async def login(payload: UserLogin, db: Session = Depends(get_db)):
+    try:
+        user = db.query(User).filter(User.email == payload.email).first()
+        if not user or not verify_password(payload.password, user.hashed_password):
+            raise HTTPException(status_code=400, detail="Incorrect email or password")
+        
+        access_token = create_access_token(data={"sub": str(user.id)})
+        return {
+            "success": True,
+            "token": access_token,
+            "user": {
+                "id": str(user.id),
+                "name": user.name,
+                "email": user.email
+            }
+        }
+    except OperationalError:
+        raise HTTPException(status_code=503, detail="Database is unavailable. Please try again later.")
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Login failed: %s", e)
+        raise HTTPException(status_code=500, detail="Login failed")
+
+
+@router.get("/auth/me")
+async def get_me(current_user: User = Depends(get_required_current_user)):
+    try:
+        return {
+            "success": True,
+            "data": {
+                "id": str(current_user.id),
+                "name": current_user.name,
+                "email": current_user.email
+            }
+        }
+    except OperationalError:
+        raise HTTPException(status_code=503, detail="Database is unavailable. Please try again later.")
 
 
 @router.get("/careers")
@@ -139,7 +218,7 @@ async def analyze_career(
 
 
 @router.post("/career/save")
-async def save_assessment(request: dict):
+async def save_assessment(request: dict, current_user: Optional[User] = Depends(get_current_user)):
     career_goal = sanitize_string(request.get("career_goal", ""), max_length=100)
     matched_skills = request.get("matched_skills", [])
     missing_skills = request.get("missing_skills", [])
@@ -158,10 +237,10 @@ async def save_assessment(request: dict):
         assessment_repo = AssessmentRepository()
         roadmap_repo = RoadmapRepository()
 
-        default_user_id = str(uuid.UUID("00000000-0000-0000-0000-000000000001"))
+        user_id = str(current_user.id) if current_user else str(uuid.UUID("00000000-0000-0000-0000-000000000001"))
 
         assessment = assessment_repo.create(
-            user_id=default_user_id,
+            user_id=user_id,
             career_goal=career_goal,
             readiness_score=readiness_score,
             matched_skills=matched_skills,
@@ -185,13 +264,15 @@ async def save_assessment(request: dict):
                 "readiness_score": readiness_score,
             },
         }
+    except OperationalError:
+        raise HTTPException(status_code=503, detail="Database is unavailable. Please try again later.")
     except Exception as e:
         logger.warning("Failed to save assessment to DB: %s", e)
-        return {"success": False, "message": "Could not save assessment"}
+        raise HTTPException(status_code=500, detail="Failed to save assessment")
 
 
 @router.get("/assessments/{assessment_id}")
-async def get_assessment(assessment_id: str):
+async def get_assessment(assessment_id: str, current_user: Optional[User] = Depends(get_current_user)):
     assessment_id = sanitize_string(assessment_id, max_length=100)
     if not assessment_id:
         raise HTTPException(status_code=400, detail="Invalid assessment ID")
@@ -205,6 +286,12 @@ async def get_assessment(assessment_id: str):
         db_assess = assessment_repo.get_by_id(assessment_id)
         if not db_assess:
             raise HTTPException(status_code=404, detail="Assessment not found")
+
+        # Scoping validation
+        default_uuid = str(uuid.UUID("00000000-0000-0000-0000-000000000001"))
+        if str(db_assess.user_id) != default_uuid:
+            if not current_user or str(db_assess.user_id) != str(current_user.id):
+                raise HTTPException(status_code=403, detail="Not authorized to access this assessment")
 
         role_data = knowledge_loader.get_role(str(db_assess.career_goal)) or {}
 
@@ -233,6 +320,8 @@ async def get_assessment(assessment_id: str):
         }
     except HTTPException:
         raise
+    except OperationalError:
+        raise HTTPException(status_code=503, detail="Database is unavailable. Please try again later.")
     except Exception as e:
         logger.warning("Failed to retrieve assessment: %s", e)
         raise HTTPException(status_code=500, detail="Failed to retrieve assessment")

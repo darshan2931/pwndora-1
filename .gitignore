@@ -16,12 +16,14 @@ out/
 # Environment
 .env
 .env.local
+.env.*.local
 
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
 
 # OS
 .DS_Store
@@ -33,3 +35,14 @@ Thumbs.db
 coverage/
 .mypy_cache/
 .ruff_cache/
+
+# Backend temp
+backend/temp_uploads/
+backend/data/
+
+# Frontend
+frontend/.next/
+frontend/out/
+
+# Docker
+docker-compose.override.yml

@@ -3,6 +3,14 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --color-primary: #2563EB;
+    --color-secondary: #7C3AED;
+    --color-accent: #10B981;
+    --color-warning: #F59E0B;
+    --color-error: #EF4444;
+  }
+
   body {
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     @apply bg-gray-50 text-gray-900 antialiased;

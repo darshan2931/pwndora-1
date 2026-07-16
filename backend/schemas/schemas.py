@@ -79,3 +79,24 @@ class ProjectRecommendation(BaseModel):
     difficulty: str
     skills: List[str]
     estimated_hours: int
+
+
+class UserSignUp(BaseModel):
+    name: str
+    email: str
+    password: str
+
+
+class UserLogin(BaseModel):
+    email: str
+    password: str
+
+
+class UserResponse(BaseModel):
+    id: str
+    name: str
+    email: str
+
+    class Config:
+        from_attributes = True
+

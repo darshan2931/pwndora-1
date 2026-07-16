@@ -63,5 +63,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 headers={"Retry-After": str(retry_after)},
             )
 
-        self._hits[ip].append(time.time())
-        return await call_next(request)
+        response = await call_next(request)
+        if response.status_code < 500:
+            self._hits[ip].append(time.time())
+        return response
