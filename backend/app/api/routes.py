@@ -1,8 +1,7 @@
 import os
-import uuid
 import shutil
 import logging
-from typing import Dict, cast
+from typing import Dict
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
@@ -20,6 +19,7 @@ MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
 
 
 def _get_ai_service():
+    # pyrefly: ignore [missing-import]
     from app.main import get_ai_service
     return get_ai_service()
 
@@ -28,6 +28,7 @@ def _get_orchestrator():
     from orchestrators.career_orchestrator import CareerOrchestrator  # pyrefly: ignore [missing-import]
     ai_svc = None
     try:
+        # pyrefly: ignore [missing-import]
         from app.main import get_ai_service
         ai_svc = get_ai_service()
     except RuntimeError:
@@ -138,106 +139,6 @@ async def analyze_career(
     return {"success": True, "data": result}
 
 
-@router.post("/career/save")
-async def save_assessment(request: dict):
-    career_goal = sanitize_string(request.get("career_goal", ""), max_length=100)
-    matched_skills = request.get("matched_skills", [])
-    missing_skills = request.get("missing_skills", [])
-    readiness_score = request.get("readiness_score", 0)
-    roadmap = request.get("roadmap", [])
-    estimated_weeks = request.get("estimated_weeks", 0)
-    ai_summary = request.get("ai_summary", "")
-    study_hours = request.get("study_hours", 10)
-    projects = request.get("projects", [])
-
-    if not career_goal:
-        raise HTTPException(status_code=400, detail="career_goal is required")
-
-    try:
-        from repositories.repositories import AssessmentRepository, RoadmapRepository
-        assessment_repo = AssessmentRepository()
-        roadmap_repo = RoadmapRepository()
-
-        default_user_id = str(uuid.UUID("00000000-0000-0000-0000-000000000001"))
-
-        assessment = assessment_repo.create(
-            user_id=default_user_id,
-            career_goal=career_goal,
-            readiness_score=readiness_score,
-            matched_skills=matched_skills,
-            missing_skills=missing_skills,
-            weekly_hours=study_hours,
-        )
-
-        if roadmap:
-            roadmap_repo.create(
-                assessment_id=str(assessment.id),
-                steps=roadmap,
-                total_hours=sum(s.get("estimated_hours", 0) for s in roadmap),
-                estimated_weeks=estimated_weeks,
-            )
-
-        return {
-            "success": True,
-            "data": {
-                "assessment_id": str(assessment.id),
-                "career_goal": career_goal,
-                "readiness_score": readiness_score,
-            },
-        }
-    except Exception as e:
-        logger.warning("Failed to save assessment to DB: %s", e)
-        return {"success": False, "message": "Could not save assessment"}
-
-
-@router.get("/assessments/{assessment_id}")
-async def get_assessment(assessment_id: str):
-    assessment_id = sanitize_string(assessment_id, max_length=100)
-    if not assessment_id:
-        raise HTTPException(status_code=400, detail="Invalid assessment ID")
-
-    try:
-        from repositories.repositories import AssessmentRepository, RoadmapRepository
-        from knowledge.loader import knowledge_loader
-        assessment_repo = AssessmentRepository()
-        roadmap_repo = RoadmapRepository()
-
-        db_assess = assessment_repo.get_by_id(assessment_id)
-        if not db_assess:
-            raise HTTPException(status_code=404, detail="Assessment not found")
-
-        role_data = knowledge_loader.get_role(str(db_assess.career_goal)) or {}
-
-        matched = [str(n) for n in (db_assess.matched_skills or [])]
-        missing = [str(n) for n in (db_assess.missing_skills or [])]
-
-        roadmap_data = []
-        db_roadmap = roadmap_repo.get_by_assessment(assessment_id)
-        if db_roadmap:
-            roadmap_data = db_roadmap.steps or []
-
-        return {
-            "success": True,
-            "data": {
-                "assessment_id": str(db_assess.id),
-                "career_goal": str(db_assess.career_goal),
-                "career_description": role_data.get("description", ""),
-                "career_readiness": db_assess.readiness_score,
-                "matched_skills": matched,
-                "missing_skills": missing,
-                "estimated_weeks": db_roadmap.estimated_weeks if db_roadmap else 0,
-                "study_hours": db_assess.weekly_hours,
-                "roadmap": roadmap_data,
-                "created_at": str(db_assess.created_at) if db_assess.created_at else None,
-            },
-        }
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.warning("Failed to retrieve assessment: %s", e)
-        raise HTTPException(status_code=500, detail="Failed to retrieve assessment")
-
-
 @router.post("/career/explain")
 async def explain_career(request: dict):
     career_goal = sanitize_string(request.get("career_goal", ""), max_length=100)
@@ -284,13 +185,10 @@ async def mentor_chat(request: dict):
             repo = AssessmentRepository()
             db_assess = repo.get_by_id(assessment_id)
             if db_assess:
-                career_goal_str = str(db_assess.career_goal)
-                role_data = knowledge_loader.get_role(career_goal_str) or {}
+                role_data = knowledge_loader.get_role(db_assess.career_goal) or {}
                 
-                raw_matched = db_assess.matched_skills
-                matched_names = [str(n) for n in raw_matched] if isinstance(raw_matched, list) else []
-                raw_missing = db_assess.missing_skills
-                missing_names = [str(n) for n in raw_missing] if isinstance(raw_missing, list) else []
+                matched_names = db_assess.matched_skills or []
+                missing_names = db_assess.missing_skills or []
                 
                 matched_skills = []
                 for name in matched_names:
@@ -303,8 +201,8 @@ async def mentor_chat(request: dict):
                     missing_skills.append(DomainSkill(**skill_data))
                     
                 career = DomainCareer(
-                    id=career_goal_str.lower().replace(" ", "-"),
-                    title=career_goal_str,
+                    id=db_assess.career_goal.lower().replace(" ", "-"),
+                    title=db_assess.career_goal,
                     description=role_data.get("description", ""),
                     required_skills=role_data.get("required_skills", []),
                 )
@@ -314,7 +212,7 @@ async def mentor_chat(request: dict):
                     target_career=career,
                     matched_skills=matched_skills,
                     missing_skills=missing_skills,
-                    readiness_score=cast(int, db_assess.readiness_score),
+                    readiness_score=db_assess.readiness_score,
                 )
         except Exception as e:
             logger.warning("Failed to load assessment context from DB: %s", e)
@@ -329,6 +227,7 @@ async def mentor_chat(request: dict):
 
     response = await ai_svc.mentor_chat(assessment, question)
 
+    from schemas.schemas import MentorResponse  # pyrefly: ignore [missing-import]
     return MentorResponse(response=response)
 
 
