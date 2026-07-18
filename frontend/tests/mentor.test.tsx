@@ -19,7 +19,7 @@ describe('MentorPage', () => {
 
   it('shows suggested questions initially', () => {
     render(<MentorPage />);
-    expect(screen.getByText('How can I help you today?')).toBeDefined();
+    expect(screen.getByText("Hello! I'm your AI Career Mentor")).toBeDefined();
     expect(screen.getByText('What certifications should I get for SOC Analyst?')).toBeDefined();
   });
 

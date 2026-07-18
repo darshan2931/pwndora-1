@@ -63,8 +63,8 @@ describe('ExplorePage', () => {
     });
     render(<ExplorePage />);
     await waitFor(() => {
-      const links = screen.getAllByText('Start Assessment →');
-      expect(links.length).toBeGreaterThanOrEqual(1);
+      const link = screen.getByText('Explore Role →');
+      expect(link).toBeDefined();
     });
   });
 });

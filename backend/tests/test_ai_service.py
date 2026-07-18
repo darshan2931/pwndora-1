@@ -243,14 +243,13 @@ class TestAIService:
             assert 0 <= confidence <= 1
 
     @pytest.mark.asyncio
-    async def test_mentor_chat_fallback(self, sample_assessment):
+    async def test_mentor_chat_raises_on_api_failure(self, sample_assessment):
         client = AIClient(api_keys=["test-key"])
         service = AIService(client)
 
         with patch.object(client, "chat_with_history", side_effect=RuntimeError("API down")):
-            result = await service.mentor_chat(sample_assessment, "What should I learn?")
-            assert isinstance(result, str)
-            assert len(result) > 0
+            with pytest.raises(RuntimeError, match="API down"):
+                await service.mentor_chat(sample_assessment, "What should I learn?")
 
     @pytest.mark.asyncio
     async def test_mentor_chat_with_session(self, sample_assessment):

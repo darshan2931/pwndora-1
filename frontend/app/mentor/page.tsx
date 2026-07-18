@@ -164,28 +164,17 @@ export default function MentorPage() {
     if (storedId) setAssessmentId(storedId);
   }, []);
 
-  const generateFollowUps = useCallback((response: string, question: string) => {
-    const q = question.toLowerCase();
-    const r = response.toLowerCase();
-    const suggestions: string[] = [];
-
-    if (q.includes('cert')) {
-      suggestions.push('How long to study for this?', 'What are the exam prerequisites?');
-    } else if (q.includes('skill') || q.includes('learn')) {
-      suggestions.push('What projects can I build with this?', 'How do I practice this?');
-    } else if (q.includes('career') || q.includes('role')) {
-      suggestions.push('What certifications do I need?', 'What salary can I expect?');
-    } else if (q.includes('project') || q.includes('portfolio')) {
-      suggestions.push('How do I document this on GitHub?', 'What skills does this build?');
-    } else if (q.includes('transition') || q.includes('switch')) {
-      suggestions.push('What certs should I start with?', 'How long does the transition take?');
-    } else if (r.includes('missing') || r.includes('gap')) {
-      suggestions.push('How do I learn these skills?', 'What order should I learn them?');
+  const parseSuggestions = useCallback((response: string): string[] => {
+    const match = response.match(/\[SUGGESTIONS\]\s*([\s\S]*?)\s*\[\/SUGGESTIONS\]/);
+    if (match) {
+      const suggestions = match[1]
+        .split('\n')
+        .map(s => s.trim())
+        .filter(s => s.length > 0 && s.length < 150);
+      setFollowUps(suggestions.slice(0, 3));
     } else {
-      suggestions.push('Can you explain more about this?', 'What should I focus on next?');
+      setFollowUps([]);
     }
-
-    setFollowUps(suggestions.slice(0, 3));
   }, []);
 
   const send = async (question?: string) => {
@@ -200,13 +189,15 @@ export default function MentorPage() {
 
     try {
       const data = await mentorChat(text, assessmentId);
+      const rawResponse = data.response || 'I could not process that question. Please try again.';
+      const cleanResponse = rawResponse.replace(/\[SUGGESTIONS\][\s\S]*?\[\/SUGGESTIONS\]/g, '').trim();
       const assistantMessage: MentorMessage = {
         role: 'assistant',
-        content: data.response || 'I could not process that question. Please try again.',
+        content: cleanResponse,
         timestamp: Date.now(),
       };
       setMessages(prev => [...prev, assistantMessage]);
-      generateFollowUps(data.response || '', text);
+      parseSuggestions(rawResponse);
     } catch {
       addToast({
         title: 'Error',

@@ -426,17 +426,13 @@ class AIService:
             context_prompt += knowledge_context
         context_prompt += f"\nQuestion: {question}"
 
-        try:
-            full_history = [{"role": "user", "content": context_prompt}] if len(history) <= 1 else history
-            response = await self.client.chat_with_history(full_history, system)
-            history.append({"role": "assistant", "content": response})
-            if len(history) > 20:
-                history = history[-20:]
-            self._save_session(session_id, history)
-            return response
-        except RuntimeError as e:
-            logger.warning("AI unavailable, using demo data: %s", e)
-            return get_demo_response("mentor", question=question)
+        full_history = [{"role": "user", "content": context_prompt}] if len(history) <= 1 else history
+        response = await self.client.chat_with_history(full_history, system)
+        history.append({"role": "assistant", "content": response})
+        if len(history) > 20:
+            history = history[-20:]
+        self._save_session(session_id, history)
+        return response
 
     async def review_resume(self, resume_text: str, career_goal: str) -> str:
         try:

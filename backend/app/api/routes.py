@@ -361,14 +361,23 @@ async def mentor_chat(request: dict):
         )
 
     if ai_svc:
-        response = await ai_svc.mentor_chat(
-            assessment, question,
-            session_id=session_id,
-            knowledge_context=knowledge_context,
-        )
+        try:
+            response = await ai_svc.mentor_chat(
+                assessment, question,
+                session_id=session_id,
+                knowledge_context=knowledge_context,
+            )
+        except RuntimeError as e:
+            logger.error("Mentor chat AI failed: %s", e)
+            raise HTTPException(
+                status_code=503,
+                detail="AI service is temporarily unavailable. Please try again later.",
+            )
     else:
-        from ai.demo_data import get_demo_response
-        response = get_demo_response("mentor", question=question)
+        raise HTTPException(
+            status_code=503,
+            detail="AI service is not configured. Please set GEMINI_API_KEY or MISTRAL_API_KEY.",
+        )
 
     return {"success": True, "response": response}
 
