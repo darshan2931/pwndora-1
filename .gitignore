@@ -48,3 +48,6 @@ frontend/out/
 
 # Docker
 docker-compose.override.yml
+
+# SSL certs (generated at runtime)
+nginx/ssl/*.pem

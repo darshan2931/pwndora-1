@@ -4,7 +4,6 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTheme } from '@/components/ThemeProvider';
-import { useAuth } from '@/components/providers/AuthProvider';
 
 const navLinks = [
   { href: '/explore', label: 'Explore Careers' },
@@ -18,7 +17,6 @@ export default function Navbar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { theme, toggle } = useTheme();
-  const { user, logout } = useAuth();
 
   return (
     <nav className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40" role="navigation" aria-label="Main navigation">
@@ -49,35 +47,6 @@ export default function Navbar() {
           </div>
 
           <div className="flex items-center gap-2">
-            {user ? (
-              <div className="hidden md:flex items-center gap-3 mr-2">
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  {user.name}
-                </span>
-                <button
-                  onClick={logout}
-                  className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 transition-all"
-                >
-                  Logout
-                </button>
-              </div>
-            ) : (
-              <div className="hidden md:flex items-center gap-2 mr-2">
-                <Link
-                  href="/login"
-                  className="px-3.5 py-1.5 rounded-lg text-xs font-semibold border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all"
-                >
-                  Sign In
-                </Link>
-                <Link
-                  href="/register"
-                  className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-primary hover:bg-primary-dark text-white shadow-sm transition-all"
-                >
-                  Register
-                </Link>
-              </div>
-            )}
-
             <button
               onClick={toggle}
               className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400 transition-all"
@@ -132,40 +101,6 @@ export default function Navbar() {
                 {link.label}
               </Link>
             ))}
-            
-            {user ? (
-              <div className="border-t border-gray-200 dark:border-gray-700 pt-2 pb-1">
-                <div className="px-3 py-2 text-sm font-medium text-gray-800 dark:text-gray-200">
-                  {user.name}
-                </div>
-                <button
-                  onClick={() => {
-                    setMobileOpen(false);
-                    logout();
-                  }}
-                  className="w-full text-left block px-3 py-2 rounded-lg text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20"
-                >
-                  Logout
-                </button>
-              </div>
-            ) : (
-              <div className="border-t border-gray-200 dark:border-gray-700 pt-2 pb-1 space-y-1">
-                <Link
-                  href="/login"
-                  onClick={() => setMobileOpen(false)}
-                  className="block px-3 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
-                >
-                  Sign In
-                </Link>
-                <Link
-                  href="/register"
-                  onClick={() => setMobileOpen(false)}
-                  className="block px-3 py-2 rounded-lg text-sm font-medium text-primary hover:bg-primary/10"
-                >
-                  Register
-                </Link>
-              </div>
-            )}
           </div>
         </div>
       )}

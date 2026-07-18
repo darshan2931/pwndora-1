@@ -31,9 +31,9 @@
 
 ### Darshan (AI Engineer)
 
-- [ ] Refine Mistral prompt templates in `backend/ai/prompts/`
-- [ ] Implement proper `ResponseValidator.validate_no_hallucinations()` logic
-- [ ] Write prompt evaluation tests (edge cases, malformed responses)
+- [x] Refine Mistral prompt templates in `backend/ai/prompts/`
+- [x] Implement proper `ResponseValidator.validate_no_hallucinations()` logic
+- [x] Write prompt evaluation tests (edge cases, malformed responses)
 
 ### Aathira (Frontend Engineer)
 
@@ -85,9 +85,9 @@
 
 ### Darshan (AI Engineer)
 
-- [ ] Integrate AI enrichment into skill extraction (LLM-based extraction fallback)
-- [ ] Build AI-powered career explanation endpoint
-- [ ] Build AI mentor chat endpoint with conversation context
+- [x] Integrate AI enrichment into skill extraction (LLM-based extraction fallback)
+- [x] Build AI-powered career explanation endpoint
+- [x] Build AI mentor chat endpoint with conversation context
 
 ### Aathira (Frontend Engineer)
 
@@ -132,11 +132,11 @@
 
 ### Darshan (AI Engineer)
 
-- [ ] Write AI service unit tests:
-  - [ ] Prompt builder output verification
-  - [ ] Response validation edge cases
-  - [ ] Mocked Mistral API tests
-- [ ] Add confidence scoring to AI explanations
+- [x] Write AI service unit tests:
+  - [x] Prompt builder output verification
+  - [x] Response validation edge cases
+  - [x] Mocked Mistral API tests
+- [x] Add confidence scoring to AI explanations
 
 ### Aathira (Frontend Engineer)
 
@@ -186,10 +186,10 @@
 
 ### Darshan (AI Engineer)
 
-- [ ] Tune Mistral prompts based on test results
-- [ ] Add fallback models (if Mistral API is down)
-- [ ] Implement response caching for common AI queries
-- [ ] Document AI prompt versioning strategy
+- [x] Tune Mistral prompts based on test results
+- [x] Add fallback models (if Mistral API is down)
+- [x] Implement response caching for common AI queries
+- [x] Document AI prompt versioning strategy
 
 ### Aathira (Frontend Engineer)
 
@@ -219,9 +219,9 @@
 
 ### Darshan
 
-- [ ] Demo script for AI mentor flow
-- [ ] Prepare explainable AI examples for presentation
-- [ ] Final prompt version freeze
+- [x] Demo script for AI mentor flow
+- [x] Prepare explainable AI examples for presentation
+- [x] Final prompt version freeze
 
 ### Aathira
 

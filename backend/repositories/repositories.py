@@ -1,5 +1,5 @@
 from database.session import SessionLocal
-from models.sqlalchemy_models import User, Assessment, Roadmap
+from models.sqlalchemy_models import User, Assessment, Roadmap, ChatHistory
 
 
 class UserRepository:
@@ -10,14 +10,10 @@ class UserRepository:
         finally:
             db.close()
 
-    def create(self, name: str, email: str) -> User:
+    def get_by_email(self, email: str):
         db = SessionLocal()
         try:
-            user = User(name=name, email=email)
-            db.add(user)
-            db.commit()
-            db.refresh(user)
-            return user
+            return db.query(User).filter(User.email == email).first()
         finally:
             db.close()
 
@@ -27,6 +23,19 @@ class AssessmentRepository:
         db = SessionLocal()
         try:
             return db.query(Assessment).filter(Assessment.id == assessment_id).first()
+        finally:
+            db.close()
+
+    def get_by_user_id(self, user_id: str, limit: int = 20):
+        db = SessionLocal()
+        try:
+            return (
+                db.query(Assessment)
+                .filter(Assessment.user_id == user_id)
+                .order_by(Assessment.created_at.desc())
+                .limit(limit)
+                .all()
+            )
         finally:
             db.close()
 
@@ -63,5 +72,50 @@ class RoadmapRepository:
             db.commit()
             db.refresh(roadmap)
             return roadmap
+        finally:
+            db.close()
+
+
+class ChatHistoryRepository:
+    def get_by_user_id(self, user_id: str, limit: int = 50):
+        db = SessionLocal()
+        try:
+            return (
+                db.query(ChatHistory)
+                .filter(ChatHistory.user_id == user_id)
+                .order_by(ChatHistory.created_at.desc())
+                .limit(limit)
+                .all()
+            )
+        finally:
+            db.close()
+
+    def get_by_session(self, session_id: str, limit: int = 20):
+        db = SessionLocal()
+        try:
+            return (
+                db.query(ChatHistory)
+                .filter(ChatHistory.session_id == session_id)
+                .order_by(ChatHistory.created_at.asc())
+                .limit(limit)
+                .all()
+            )
+        finally:
+            db.close()
+
+    def create(self, user_id: str, session_id: str, question: str, answer: str) -> ChatHistory:
+        db = SessionLocal()
+        try:
+            chat = ChatHistory(
+                user_id=user_id,
+                assessment_id="00000000-0000-0000-0000-000000000000",
+                session_id=session_id,
+                question=question,
+                answer=answer,
+            )
+            db.add(chat)
+            db.commit()
+            db.refresh(chat)
+            return chat
         finally:
             db.close()

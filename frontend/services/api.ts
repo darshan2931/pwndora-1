@@ -11,15 +11,8 @@ const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL || '';
 const API_PREFIX = '/api/v1';
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   const headers = { ...options?.headers } as Record<string, string>;
-
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-
   const url = API_ORIGIN ? `${API_ORIGIN}${API_PREFIX}${path}` : `${API_PREFIX}${path}`;
-
   const res = await fetch(url, { ...options, headers });
   if (!res.ok) {
     const error = await res.json().catch(() => ({ detail: 'Request failed' }));
@@ -86,6 +79,12 @@ export async function mentorChat(question: string, assessmentId?: string): Promi
   });
 }
 
+export async function clearMentorSession(sessionId: string): Promise<{ success: boolean }> {
+  return request(`/mentor/session/${encodeURIComponent(sessionId)}`, {
+    method: 'DELETE',
+  });
+}
+
 export async function explainCareer(data: {
   career_goal: string;
   user_skills: string[];
@@ -95,4 +94,12 @@ export async function explainCareer(data: {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   });
+}
+
+export async function getSkillResources(skillName: string): Promise<{ success: boolean; data: Array<{ name: string; url: string; type: string }> }> {
+  return request(`/resources/${encodeURIComponent(skillName)}`);
+}
+
+export async function getLearningPath(career: string): Promise<{ success: boolean; data: { career: string; sequence: string[]; projects: string[]; certifications: string[]; estimated_duration: number } }> {
+  return request(`/learning-paths/${encodeURIComponent(career)}`);
 }

@@ -26,6 +26,7 @@ export default function AssessPage() {
 
   const handleSubmit = async () => {
     if (!manualSkills.trim()) {
+      setError('Please enter at least one skill.');
       addToast({ title: 'Error', description: 'Please enter at least one skill.', type: 'error' });
       return;
     }

@@ -35,14 +35,31 @@ def get_ai_service() -> AIService:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global _ai_service
-    keys_str = os.getenv("MISTRAL_API_KEYS", "")
-    if not keys_str:
-        keys_str = os.getenv("MISTRAL_API_KEY", "")
-    
-    api_keys = [k.strip() for k in keys_str.split(",") if k.strip()]
-    if api_keys:
-        client = AIClient(api_keys=api_keys)
+
+    from database.session import engine, Base
+    from models.sqlalchemy_models import Assessment, Roadmap, ChatHistory, KnowledgeCache  # noqa: F401
+    Base.metadata.create_all(bind=engine)
+    logger.info("Database tables verified/created.")
+
+    gemini_key = os.getenv("GEMINI_API_KEY", "")
+    if gemini_key:
+        api_keys = [k.strip() for k in gemini_key.split(",") if k.strip()]
+        from ai.gemini_client import GeminiClient
+        client = GeminiClient(api_keys=api_keys)
         _ai_service = AIService(client=client)
+        logger.info("AI service initialized with Gemini API (%d key(s))", len(api_keys))
+    else:
+        keys_str = os.getenv("MISTRAL_API_KEYS", "")
+        if not keys_str:
+            keys_str = os.getenv("MISTRAL_API_KEY", "")
+
+        api_keys = [k.strip() for k in keys_str.split(",") if k.strip()]
+        if api_keys:
+            client = AIClient(api_keys=api_keys)
+            _ai_service = AIService(client=client)
+            logger.info("AI service initialized with Mistral API (%d key(s))", len(api_keys))
+        else:
+            logger.warning("No AI API keys found. AI features will use demo data.")
     yield
     _ai_service = None
 
@@ -81,6 +98,9 @@ app.include_router(router, prefix="/api/v1")
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):
+    from fastapi.exceptions import HTTPException as FastAPIHTTPException
+    if isinstance(exc, FastAPIHTTPException):
+        raise exc
     logger.error("Unhandled exception: %s", exc, exc_info=True)
     from fastapi.responses import JSONResponse
     return JSONResponse(

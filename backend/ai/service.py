@@ -407,19 +407,24 @@ class AIService:
             text = get_demo_response("career")
             return text, 0.5
 
-    async def mentor_chat(self, assessment: Assessment, question: str, session_id: str = "default") -> str:
+    async def mentor_chat(self, assessment, question: str, session_id: str = "default", knowledge_context: str = "") -> str:
         system = _load_prompt("mentor")
         history = self._get_session(session_id)
         history.append({"role": "user", "content": question})
 
-        context_prompt = (
-            f"User Profile:\n"
-            f"- Target Role: {assessment.target_career.title}\n"
-            f"- Readiness: {assessment.readiness_score}%\n"
-            f"- Known Skills: {[s.name for s in assessment.matched_skills]}\n"
-            f"- Missing Skills: {[s.name for s in assessment.missing_skills]}\n\n"
-            f"Question: {question}"
-        )
+        if assessment is not None:
+            context_prompt = (
+                f"User Profile:\n"
+                f"- Target Role: {assessment.target_career.title}\n"
+                f"- Readiness: {assessment.readiness_score}%\n"
+                f"- Known Skills: {[s.name for s in assessment.matched_skills]}\n"
+                f"- Missing Skills: {[s.name for s in assessment.missing_skills]}\n"
+            )
+        else:
+            context_prompt = "User Profile:\n- No assessment completed yet.\n"
+        if knowledge_context:
+            context_prompt += knowledge_context
+        context_prompt += f"\nQuestion: {question}"
 
         try:
             full_history = [{"role": "user", "content": context_prompt}] if len(history) <= 1 else history

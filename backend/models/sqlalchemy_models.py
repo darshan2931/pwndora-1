@@ -45,6 +45,7 @@ class ChatHistory(Base):
     __tablename__ = "chat_history"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), nullable=False, index=True)
     assessment_id = Column(UUID(as_uuid=True), nullable=False)
     session_id = Column(String(100), nullable=False, index=True)
     question = Column(Text, nullable=False)

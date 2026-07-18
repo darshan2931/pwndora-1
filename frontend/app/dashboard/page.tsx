@@ -9,7 +9,6 @@ import Skeleton, { SkeletonDashboard } from '@/components/ui/Skeleton';
 import { AssessmentData } from '@/types';
 import { READINESS_THRESHOLDS, READINESS_LABELS } from '@/constants';
 import { getAssessment } from '@/services/api';
-import { useToast } from '@/components/ui';
 
 function ReadinessGauge({ score }: { score: number }) {
   const radius = 70;
@@ -67,24 +66,23 @@ function SkillBar({ skills, type }: { skills: string[]; type: 'matched' | 'missi
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { addToast } = useToast();
   const [data, setData] = useState<AssessmentData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const assessmentId = sessionStorage.getItem('assessment_id');
-    const stored = sessionStorage.getItem('assessment');
+    async function loadAssessment() {
+      const assessmentId = sessionStorage.getItem('assessment_id');
+      const stored = sessionStorage.getItem('assessment');
 
-    if (stored) {
-      try { setData(JSON.parse(stored)); } catch { /* ignore */ }
-    }
+      if (stored) {
+        try { setData(JSON.parse(stored)); } catch { /* ignore */ }
+      }
 
-    if (assessmentId) {
-      getAssessment(assessmentId)
-        .then(res => {
+      if (assessmentId) {
+        try {
+          const res = await getAssessment(assessmentId);
           if (res.success && res.data) {
-            setData(prev => ({
-              ...(prev || {}),
+            setData({
               career_goal: res.data.career_goal as string,
               career_readiness: res.data.career_readiness as number,
               matched_skills: res.data.matched_skills as string[],
@@ -92,20 +90,14 @@ export default function DashboardPage() {
               estimated_weeks: res.data.estimated_weeks as number,
               study_hours: res.data.study_hours as number,
               roadmap: res.data.roadmap as AssessmentData['roadmap'],
-            } as AssessmentData));
+            } as AssessmentData);
           }
-        })
-        .catch(() => {
-          addToast({
-            title: 'Error',
-            description: 'Failed to load assessment data. Please try again.',
-            type: 'error'
-          });
-        });
+        } catch { /* ignore — fallback to sessionStorage */ }
+      }
+      setLoading(false);
     }
-
-    setLoading(false);
-  }, [addToast]);
+    loadAssessment();
+  }, []);
 
   if (loading) {
     return (

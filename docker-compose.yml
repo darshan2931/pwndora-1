@@ -1,14 +1,32 @@
-version: "3.9"
-
 services:
+  nginx:
+    build: ./nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - certbot-www:/var/www/certbot:ro
+    depends_on:
+      - frontend
+      - backend
+    restart: unless-stopped
+    networks:
+      - frontend-net
+      - backend-net
+
   backend:
     build: ./backend
-    ports:
-      - "8000:8000"
+    expose:
+      - "8000"
     env_file: .env
     environment:
       - PYTHONPATH=/app
       - DATABASE_URL=postgresql://user:pass@db:5432/cyberpath
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - MISTRAL_API_KEY=${MISTRAL_API_KEY:-}
+    volumes:
+      - ./knowledge:/knowledge:ro
     depends_on:
       db:
         condition: service_healthy
@@ -19,18 +37,26 @@ services:
       timeout: 5s
       retries: 3
       start_period: 15s
+    networks:
+      - backend-net
 
   frontend:
-    build: ./frontend
-    ports:
-      - "3000:3000"
+    build:
+      context: ./frontend
+      args:
+        - NEXT_PUBLIC_API_URL=
+    expose:
+      - "3000"
     env_file: .env
     environment:
-      - NEXT_PUBLIC_API_URL=http://backend:8000
+      - NEXT_PUBLIC_API_URL=
     depends_on:
       backend:
         condition: service_healthy
     restart: unless-stopped
+    networks:
+      - frontend-net
+      - backend-net
 
   db:
     image: postgres:16-alpine
@@ -38,8 +64,8 @@ services:
       POSTGRES_DB: cyberpath
       POSTGRES_USER: user
       POSTGRES_PASSWORD: pass
-    ports:
-      - "5432:5432"
+    expose:
+      - "5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -49,6 +75,15 @@ services:
       retries: 5
       start_period: 10s
     restart: unless-stopped
+    networks:
+      - backend-net
+
+networks:
+  frontend-net:
+    driver: bridge
+  backend-net:
+    driver: bridge
 
 volumes:
   pgdata:
+  certbot-www:
