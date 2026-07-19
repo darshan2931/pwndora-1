@@ -7,7 +7,7 @@ import {
   Shield, Zap, BookOpen, Trophy, Settings
 } from 'lucide-react';
 import { api } from '@/services/api';
-import { useEffect, useState } from 'react';
+import { useDashboardData } from '@/components/providers/DashboardDataProvider';
 
 const NAV = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -22,19 +22,8 @@ const SECONDARY = [
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const [profile, setProfile] = useState<any>(null);
-
-  useEffect(() => {
-    async function load() {
-      try {
-        const d = await api.getDashboardData();
-        setProfile(d?.data?.profile || {});
-      } catch (e) {
-        setProfile({});
-      }
-    }
-    load();
-  }, []);
+  const { data } = useDashboardData();
+  const profile = data?.profile || {};
 
   return (
     <aside className="fixed left-0 top-0 h-full w-56 bg-[#111113] border-r border-white/[0.06] flex flex-col z-40">

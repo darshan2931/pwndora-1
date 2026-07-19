@@ -170,7 +170,7 @@ function WelcomeScreen({ name, onNameChange, onNext }: {
         </svg>
       </div>
 
-      <h1 className="text-4xl font-extrabold text-white mb-3 tracking-tight">Welcome to Pwndora</h1>
+      <h1 className="text-4xl font-extrabold text-white mb-3 tracking-tight">Welcome to CyberPath AI</h1>
       <p className="text-gray-400 mb-8 leading-relaxed">
         Let&apos;s build your cybersecurity profile.<br />
         This takes about 2 minutes.
@@ -768,7 +768,7 @@ export default function OnboardingPage() {
           <svg className="w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
           </svg>
-          Pwndora
+          CyberPath AI
         </div>
         <div className="text-xs text-gray-600">Step {step + 1} of {STEPS.length}</div>
       </div>
@@ -805,7 +805,7 @@ export default function OnboardingPage() {
                      readiness_score: state.readinessScore,
                      roadmap: state.roadmap,
                      estimated_weeks: state.estimatedWeeks,
-                     study_hours: parseInt(state.studyHours) || 10
+                     study_hours: { 'lt5': 4, '5-10': 8, '10-20': 15, '20+': 25 }[state.studyHours] || 10
                    });
                 } catch(e) {
                    console.error("Failed to save assessment", e);

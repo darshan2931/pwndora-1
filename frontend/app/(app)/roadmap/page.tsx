@@ -160,7 +160,10 @@ export default function RoadmapPage() {
   const handleToggle = async (index: number) => {
     if (!data || !data.roadmap) return;
     
-    // Optomistic UI update
+    const assessmentId = data.profile?.id;
+    if (!assessmentId) return;
+    
+    // Optimistic UI update
     const newRoadmap = [...data.roadmap];
     const node = newRoadmap[index];
     if (node.status === 'available') {
@@ -177,7 +180,7 @@ export default function RoadmapPage() {
     setData({ ...data, roadmap: newRoadmap });
 
     try {
-      await api.toggleRoadmapStep('current', index);
+      await api.toggleRoadmapStep(assessmentId, index);
     } catch (e) {
       console.error('Failed to toggle', e);
       // Revert on failure by reloading
@@ -191,6 +194,7 @@ export default function RoadmapPage() {
   const roadmap = data.roadmap || [];
   const profile = data.profile || {};
   const completed = roadmap.filter((n: any) => n.status === 'completed').length;
+  const inProgress = roadmap.filter((n: any) => n.status === 'in-progress').length;
   const total = roadmap.length;
   const pct = total ? Math.round((completed / total) * 100) : 0;
 
@@ -216,8 +220,8 @@ export default function RoadmapPage() {
         <div className="grid grid-cols-3 gap-4">
           {[
             { label: 'Completed', value: completed, color: 'text-emerald-400' },
-            { label: 'In Progress', value: 1, color: 'text-blue-400' },
-            { label: 'Remaining', value: total - completed - 1, color: 'text-zinc-400' },
+            { label: 'In Progress', value: inProgress, color: 'text-blue-400' },
+            { label: 'Remaining', value: total - completed - inProgress, color: 'text-zinc-400' },
           ].map(s => (
             <div key={s.label} className="text-center">
               <div className={`text-xl font-bold ${s.color}`}>{s.value}</div>

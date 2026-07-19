@@ -12,13 +12,13 @@ class ResumeService:
 
 
 class CareerService:
-    def analyze(self, user_skills: list[str], career_goal: str) -> Assessment:
+    def analyze(self, profile: CyberProfile, career_goal: str) -> Assessment:
         raise NotImplementedError()
 
-    def calculate_readiness(self, matched: int, total: int) -> int:
-        if total == 0:
+    def calculate_readiness(self, profile: CyberProfile, career: any, matched: int, total_skills: int) -> int:
+        if total_skills == 0:
             return 0
-        return round((matched / total) * 100)
+        return round((matched / total_skills) * 100)
 
 
 class RoadmapService:

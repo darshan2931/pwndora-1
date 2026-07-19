@@ -113,4 +113,8 @@ class AIOrchestrator:
             return {"questions": [
                 {"question": "What is Linux?", "options": ["OS", "Browser", "Language", "Fruit"], "correct_index": 0, "explanation": "It's an OS"}
             ]}
+        elif template_name == "mission":
+            return {"task": "Review your notes on network fundamentals", "skill": "Networking", "estimated_minutes": 30, "priority": "medium"}
+        elif template_name == "summarize":
+            return {"summary": "Session summary placeholder", "important_facts": [], "next_goal": ""}
         return "This is a mock response (API key missing)."

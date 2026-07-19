@@ -28,7 +28,13 @@ const handleResponse = async (res: Response) => {
     throw new Error('Unauthorized');
   }
   if (!res.ok) {
-    throw new Error('API Request Failed');
+    try {
+      const err = await res.json();
+      throw new Error(err.detail || 'API Request Failed');
+    } catch (e) {
+      if (e instanceof SyntaxError) throw new Error('API Request Failed');
+      throw e;
+    }
   }
   return res.json();
 };

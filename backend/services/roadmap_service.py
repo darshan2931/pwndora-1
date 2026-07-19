@@ -13,7 +13,7 @@ class RoadmapService:
         self.kb = knowledge_loader
         self.career_service = CareerService()
 
-    def generate_timeline(self, profile: CyberProfile, target_career: str) -> Roadmap:
+    def generate_timeline(self, profile: CyberProfile, target_career: str, study_hours: int = 10) -> Roadmap:
         """
         Deterministically generates a roadmap based on the skill dependency graph.
         Groups skills into a logical learning sequence without hallucinating.
@@ -79,7 +79,7 @@ class RoadmapService:
                 )
             )
             
-        estimated_weeks = max(1, total_hours // 10) # Assume 10 hours a week
+        estimated_weeks = max(1, total_hours // max(1, study_hours))
         
         return Roadmap(
             steps=steps,
@@ -92,4 +92,4 @@ class RoadmapService:
         from app.domain.models import CyberProfile
         profile = CyberProfile(skills=list(assessment.matched_skills or []))
         target = str(assessment.target_career.title) if hasattr(assessment, 'target_career') else ""
-        return self.generate_timeline(profile, target)
+        return self.generate_timeline(profile, target, study_hours)

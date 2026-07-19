@@ -12,6 +12,17 @@ ENV NEXT_TELEMETRY_DISABLED 1
 
 RUN npm run build
 
+FROM node:20-alpine
+
+WORKDIR /app
+
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_ENV=production
+
+COPY --from=0 /app/.next/standalone ./
+COPY --from=0 /app/.next/static ./.next/static
+COPY --from=0 /app/public ./public
+
 EXPOSE 3000
 
-CMD ["npm", "start"]
+CMD ["node", "server.js"]

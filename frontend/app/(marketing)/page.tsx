@@ -48,7 +48,7 @@ export default function LandingPage() {
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link
-              href="/onboarding"
+              href="/register"
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-white text-zinc-900 font-semibold text-sm hover:bg-zinc-100 transition-colors shadow-lg"
             >
               Start Your Cyber Journey
@@ -140,7 +140,7 @@ export default function LandingPage() {
             {CAREER_PATHS.map(path => (
               <Link
                 key={path.title}
-                href="/onboarding"
+                href="/register"
                 className="group p-6 rounded-xl border border-white/[0.06] bg-[#111113] hover:border-white/[0.12] hover:bg-[#131315] transition-all duration-150"
               >
                 <div className="flex items-start justify-between mb-3">
@@ -199,7 +199,7 @@ export default function LandingPage() {
             Upload your resume, get your profile, and meet your AI mentor — all in under 5 minutes.
           </p>
           <Link
-            href="/onboarding"
+            href="/register"
             className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-white text-zinc-900 font-semibold text-sm hover:bg-zinc-100 transition-colors shadow-lg"
           >
             Get Started — It&apos;s Free

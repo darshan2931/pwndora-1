@@ -26,21 +26,28 @@ function MessageBubble({ message }: { message: MentorMessage }) {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Simple markdown renderer
+  // Simple markdown renderer with HTML sanitization
   const renderContent = (text: string) => {
+    const escapeHtml = (str: string) => str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+
     return text
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
       .replace(/`(.+?)`/g, '<code class="px-1.5 py-0.5 rounded bg-white/[0.08] text-blue-300 text-xs font-mono">$1</code>')
       .split('\n')
       .map((line, i) => {
+        const escaped = escapeHtml(line.replace(/\*\*(.+?)\*\*/g, '$1').replace(/`(.+?)`/g, '$1'));
         if (line.match(/^\d+\.\s/)) {
-          return `<div class="flex gap-2 my-1"><span class="text-zinc-500 font-mono text-xs mt-0.5">${line.match(/^(\d+)\./)?.[1]}.</span><span>${line.replace(/^\d+\.\s/, '')}</span></div>`;
+          return `<div class="flex gap-2 my-1"><span class="text-zinc-500 font-mono text-xs mt-0.5">${line.match(/^(\d+)\./)?.[1]}.</span><span>${escaped.replace(/^\d+\.\s/, '')}</span></div>`;
         }
         if (line.startsWith('**') && line.endsWith('**')) {
-          return `<div class="font-semibold text-[#fafafa] mt-3 mb-1">${line.slice(2, -2)}</div>`;
+          return `<div class="font-semibold text-[#fafafa] mt-3 mb-1">${escaped.slice(2, -2)}</div>`;
         }
         if (line === '') return '<div class="h-2"></div>';
-        return `<p class="leading-relaxed">${line}</p>`;
+        return `<p class="leading-relaxed">${escaped}</p>`;
       })
       .join('');
   };

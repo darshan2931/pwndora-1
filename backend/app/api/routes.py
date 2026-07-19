@@ -1,6 +1,6 @@
 import os
-import shutil
 import logging
+import datetime
 from typing import Dict
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile, Depends
@@ -102,6 +102,7 @@ async def analyze_career(
     study_hours: int = Form(10),
     manual_skills: str = Form(None),
     resume: UploadFile = File(None),
+    current_user: User = Depends(get_current_user),
 ):
     if not resume and not manual_skills:
         raise HTTPException(status_code=400, detail="Either resume or manual_skills is required")
@@ -140,7 +141,11 @@ async def analyze_career(
             logger.error("Failed to parse resume: %s", e)
             raise HTTPException(status_code=500, detail=f"Failed to parse resume: {e}")
         finally:
-            pass
+            if temp_file_path and os.path.exists(temp_file_path):
+                try:
+                    os.remove(temp_file_path)
+                except OSError:
+                    pass
     elif manual_skills:
         raw = [s.strip() for s in manual_skills.split(",") if s.strip()]
         extracted_skills = validate_skills_list(raw)
@@ -331,7 +336,8 @@ async def mentor_chat(
 
 
 @router.delete("/mentor/session/{session_id}")
-async def clear_mentor_session(session_id: str):
+async def clear_mentor_session(session_id: str, current_user: User = Depends(get_current_user)):
+    session_id = sanitize_string(session_id, max_length=100)
     try:
         ai_svc = _get_ai_service()
         ai_svc.clear_session(session_id)
@@ -367,6 +373,7 @@ async def upload_resume_review(
     if resume.size and resume.size > MAX_FILE_SIZE:
         raise HTTPException(status_code=400, detail="File too large. Maximum size is 5MB.")
 
+    temp_file_path = None
     try:
         from services.storage_service import StorageService
         storage = StorageService()
@@ -403,7 +410,11 @@ async def upload_resume_review(
         logger.error("Failed to process resume review: %s", e)
         raise HTTPException(status_code=500, detail=f"Failed to process resume review: {e}")
     finally:
-        pass
+        if temp_file_path and os.path.exists(temp_file_path):
+            try:
+                os.remove(temp_file_path)
+            except OSError:
+                pass
 
 
 @router.get("/resume-review")
@@ -430,21 +441,16 @@ async def get_resume_reviews(current_user: User = Depends(get_current_user)):
 async def toggle_roadmap_step(
     roadmap_id: str, 
     step_index: int,
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
     from repositories.repositories import RoadmapRepository, AssessmentRepository  # pyrefly: ignore [missing-import]
+    from models.sqlalchemy_models import Roadmap
     roadmap_repo = RoadmapRepository()
     
-    # Optional: verify ownership via assessment
-    
-    roadmap = roadmap_repo.get_by_assessment(roadmap_id) # The frontend might pass assessment_id as roadmap_id
+    roadmap = roadmap_repo.get_by_assessment(roadmap_id)
     if not roadmap:
-        # Fallback to id
-        db = SessionLocal() # we shouldn't do this inline ideally but quick fix if ID differs
-        from models.sqlalchemy_models import Roadmap
         roadmap = db.query(Roadmap).filter(Roadmap.id == roadmap_id).first()
-        db.close()
-        
         if not roadmap:
             raise HTTPException(status_code=404, detail="Roadmap not found")
 
@@ -454,7 +460,6 @@ async def toggle_roadmap_step(
         raise HTTPException(status_code=400, detail="Invalid step index")
         
     current_status = steps[step_index].get("status", "available")
-    import datetime
     
     if current_status == "available":
         steps[step_index]["status"] = "in-progress"
@@ -678,7 +683,7 @@ async def update_progress(request: dict, current_user: User = Depends(get_curren
     project_title = request.get("project_title")
     study_hours = request.get("study_hours", 0)
     
-    from repositories.repositories import AssessmentRepository
+    from repositories.repositories import AssessmentRepository, RoadmapRepository
     from services.progress_service import ProgressService
     from app.domain.models import CyberProfile, Skill
     
@@ -699,12 +704,28 @@ async def update_progress(request: dict, current_user: User = Depends(get_curren
     result = {}
     target = str(db_assess.career_goal)
     
-    if skill_name:
-        result = svc.complete_skill(profile, skill_name, target)
-    elif project_title:
-        result = svc.complete_project(profile, project_title, target)
-    elif study_hours > 0:
-        result = svc.add_study_hours(profile, study_hours, target)
+    try:
+        if skill_name:
+            result = svc.complete_skill(profile, skill_name, target)
+        elif project_title:
+            result = svc.complete_project(profile, project_title, target)
+        elif study_hours > 0:
+            result = svc.add_study_hours(profile, study_hours, target)
+        
+        updated_profile = result.get("profile")
+        if updated_profile:
+            new_matched = [s.name for s in updated_profile.skills]
+            db_assess.matched_skills = new_matched
+            db_assess.readiness_score = result.get("readiness_score", db_assess.readiness_score)
+            from database.session import SessionLocal
+            db = SessionLocal()
+            try:
+                db.merge(db_assess)
+                db.commit()
+            finally:
+                db.close()
+    except Exception as e:
+        logger.warning("Failed to update progress: %s", e)
         
     return {
         "success": True,

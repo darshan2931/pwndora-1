@@ -3,8 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Bell, Search, ChevronRight } from 'lucide-react';
-import { api } from '@/services/api';
-import { useEffect, useState } from 'react';
+import { useDashboardData } from '@/components/providers/DashboardDataProvider';
 
 const BREADCRUMB_MAP: Record<string, string> = {
   '/dashboard': 'Dashboard',
@@ -16,19 +15,8 @@ const BREADCRUMB_MAP: Record<string, string> = {
 export default function TopBar() {
   const pathname = usePathname();
   const currentPage = BREADCRUMB_MAP[pathname] || 'CyberPath AI';
-  const [profile, setProfile] = useState<any>(null);
-
-  useEffect(() => {
-    async function load() {
-      try {
-        const d = await api.getDashboardData();
-        setProfile(d?.data?.profile || {});
-      } catch (e) {
-        setProfile({});
-      }
-    }
-    load();
-  }, []);
+  const { data } = useDashboardData();
+  const profile = data?.profile || {};
 
   return (
     <header className="fixed top-0 right-0 left-56 h-14 bg-[#09090b]/80 backdrop-blur-xl border-b border-white/[0.06] z-30 flex items-center px-6 gap-4">
