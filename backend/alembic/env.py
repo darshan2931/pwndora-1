@@ -5,7 +5,12 @@ from alembic import context
 from sqlalchemy import engine_from_config, pool
 
 from database.session import Base
-from models.sqlalchemy_models import User, Assessment, Roadmap, ChatHistory, KnowledgeCache
+from models.sqlalchemy_models import (
+    User, CyberProfile, Assessment, Roadmap, ChatMemory,
+    ResumeAnalysis, ChatHistory, ResumeReview,
+    Skill, Project, Mission, Progress, WeeklyReport,
+    Achievement, KnowledgeCache,
+)
 
 config = context.config
 
