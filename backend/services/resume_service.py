@@ -44,6 +44,47 @@ class ResumeService(IResumeService):
             education=education
         )
 
+    async def parse_async(self, file_path: str) -> CyberProfile:
+        text = await self.extract_text(file_path)
+        skills = await self.extract_skills_async(text)
+        certs = self._detect_certifications(text)
+        
+        projects = []
+        education = []
+        
+        # If AI is available, use it to pull out deeper profile info
+        if self.ai_service:
+            try:
+                ai_result = await self.ai_service.extract_skills_from_resume(text)
+                if "projects" in ai_result:
+                    projects = ai_result["projects"]
+                if "education" in ai_result:
+                    education = ai_result["education"]
+            except Exception as e:
+                pass
+                
+        return CyberProfile(
+            skills=skills, 
+            certifications=certs,
+            projects_completed=projects,
+            education=education
+        )
+
+    async def extract_text(self, file_path: str) -> str:
+        # First try to run OCR if the AI service is available
+        if self.ai_service:
+            try:
+                ocr_text = await self.ai_service.run_ocr(file_path)
+                if ocr_text and ocr_text.strip():
+                    return ocr_text
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning("OCR extraction failed, falling back to local extraction: %s", e)
+
+        # Fallback to local text extraction
+        return self._extract_text(file_path)
+
     def _extract_text(self, file_path: str) -> str:
         ext = os.path.splitext(file_path)[1].lower()
         if ext == ".pdf":
@@ -113,6 +154,41 @@ class ResumeService(IResumeService):
             skills.append(Skill(**skill_data))
         return skills
 
+    async def extract_skills_async(self, text: str) -> List[Skill]:
+        if not text:
+            return []
+        
+        text_lower = text.lower()
+        extracted_names = []
+        
+        # 1. Rule-based keyword matching against knowledge base
+        skills_data = self.kb.get_skills()
+        for skill in skills_data:
+            name = skill["name"]
+            pattern = rf"\b{re.escape(name.lower())}\b"
+            if re.search(pattern, text_lower):
+                extracted_names.append(name)
+                
+        # 2. AI enrichment / fallback if few skills are found and AI service is available
+        if len(extracted_names) < 3 and self.ai_service:
+            try:
+                ai_result = await self.ai_service.extract_skills_from_resume(text)
+                ai_skills = ai_result.get("skills", [])
+                for s in ai_skills:
+                    if s not in extracted_names:
+                        match = self.kb.get_skill(s)
+                        if match:
+                            extracted_names.append(match["name"])
+            except Exception:
+                pass
+                
+        # Map names to Skill objects
+        skills = []
+        for name in extracted_names:
+            skill_data = self.kb.get_skill(name) or {"name": name, "category": "Other", "difficulty": "intermediate"}
+            skills.append(Skill(**skill_data))
+        return skills
+
     def _detect_certifications(self, text: str) -> List[str]:
         if not text:
             return []
@@ -127,3 +203,4 @@ class ResumeService(IResumeService):
             if re.search(pattern, text_lower):
                 extracted_certs.append(name)
         return extracted_certs
+

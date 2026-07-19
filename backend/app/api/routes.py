@@ -21,7 +21,7 @@ router.include_router(auth_router)
 _cache: Dict[str, dict] = {}
 CACHE_TTL = 300
 
-ALLOWED_EXTENSIONS = {".pdf", ".docx", ".txt"}
+ALLOWED_EXTENSIONS = {".pdf", ".docx", ".txt", ".png", ".jpg", ".jpeg"}
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
 
 
@@ -134,7 +134,7 @@ async def analyze_career(
 
             from services.resume_service import ResumeService  # pyrefly: ignore [missing-import]
             resume_svc = ResumeService(ai_service=ai_svc)
-            profile = resume_svc.parse(temp_file_path)
+            profile = await resume_svc.parse_async(temp_file_path)
             extracted_skills = [s.name for s in profile.skills]
         except Exception as e:
             logger.error("Failed to parse resume: %s", e)
@@ -370,12 +370,12 @@ async def upload_resume_review(
         temp_file_path = storage.save_upload(resume)
 
         # 1. Extract text from resume
+        ai_svc = _get_ai_service()
         from services.resume_service import ResumeService  # pyrefly: ignore [missing-import]
-        resume_svc = ResumeService(ai_service=None) # We just need it for text extraction
-        text = resume_svc.extract_text(temp_file_path)
+        resume_svc = ResumeService(ai_service=ai_svc)
+        text = await resume_svc.extract_text(temp_file_path)
 
         # 2. Get AI feedback
-        ai_svc = _get_ai_service()
         feedback = await ai_svc.review_resume(text, career_goal)
 
         # 3. Save to DB

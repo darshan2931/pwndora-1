@@ -82,3 +82,24 @@ class AIService:
             json_mode=True
         )
         return raw_json
+
+    async def run_ocr(self, file_path: str) -> str:
+        """Extract text from file using OCR if the primary provider supports it."""
+        if self.orchestrator.provider and hasattr(self.orchestrator.provider, "run_ocr"):
+            try:
+                return await self.orchestrator.provider.run_ocr(file_path)
+            except NotImplementedError:
+                pass
+        return ""
+
+    async def review_resume(self, resume_text: str, career_goal: str) -> str:
+        """Reviews a resume against a career goal and provides feedback."""
+        prompt = f"Please review the following resume details:\n\n{resume_text}"
+        
+        return await self.orchestrator.execute_task(
+            task_prompt=prompt,
+            template_name="resume_reviewer",
+            career_goal=career_goal,
+            json_mode=False
+        )
+

@@ -21,3 +21,10 @@ class BaseAIProvider(ABC):
         history format: [{"role": "user"|"assistant", "content": "..."}]
         """
         pass
+
+    async def run_ocr(self, file_path: str) -> str:
+        """
+        Extract text from a file using OCR capabilities of the provider.
+        """
+        raise NotImplementedError("OCR is not supported by this provider.")
+

@@ -57,3 +57,53 @@ class MistralProvider(BaseAIProvider):
             except Exception as e:
                 logger.error("Mistral API call failed: %s", e)
                 raise
+
+    async def run_ocr(self, file_path: str) -> str:
+        import os
+        filename = os.path.basename(file_path)
+        upload_url = "https://api.mistral.ai/v1/files"
+        headers = {"Authorization": f"Bearer {self.api_key}"}
+
+        async with httpx.AsyncClient(timeout=60) as client:
+            # 1. Upload the file
+            with open(file_path, "rb") as f:
+                files = {"file": (filename, f)}
+                data = {"purpose": "ocr"}
+                resp = await client.post(upload_url, headers=headers, files=files, data=data)
+                resp.raise_for_status()
+                file_info = resp.json()
+                file_id = file_info["id"]
+
+            try:
+                # 2. Get signed URL
+                url_endpoint = f"https://api.mistral.ai/v1/files/{file_id}/url"
+                resp = await client.get(url_endpoint, headers=headers)
+                resp.raise_for_status()
+                url_info = resp.json()
+                signed_url = url_info["url"]
+
+                # 3. Process OCR
+                ocr_endpoint = "https://api.mistral.ai/v1/ocr"
+                ocr_payload = {
+                    "model": "mistral-ocr-latest",
+                    "document": {
+                        "type": "document_url",
+                        "document_url": signed_url
+                    }
+                }
+                resp = await client.post(ocr_endpoint, headers=headers, json=ocr_payload)
+                resp.raise_for_status()
+                ocr_data = resp.json()
+
+                # 4. Extract markdown content
+                pages = ocr_data.get("pages", [])
+                ocr_text = "\n".join([page.get("markdown", "") for page in pages])
+                return ocr_text
+            finally:
+                # Clean up uploaded file
+                try:
+                    delete_endpoint = f"https://api.mistral.ai/v1/files/{file_id}"
+                    await client.delete(delete_endpoint, headers=headers)
+                except Exception as delete_error:
+                    logger.warning("Failed to delete temp file from Mistral: %s", delete_error)
+
