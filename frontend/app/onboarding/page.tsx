@@ -21,6 +21,9 @@ interface OnboardingState {
   studyHours: string;
   learningPrefs: string[];
   experience: string;
+  readinessScore: number;
+  roadmap: any[];
+  estimatedWeeks: number;
 }
 
 // ─── Data ─────────────────────────────────────────────────────────────────────
@@ -369,16 +372,18 @@ function ResumeUploadScreen({ file, onFile, onSkip }: {
   );
 }
 
-function SkillReviewScreen({ skills, missing, onToggle, onAddSkill }: {
+function SkillReviewScreen({ skills, missing, onToggle, onAddSkill, onRemoveMissing, onAddMissing }: {
   skills: Skill[];
   missing: string[];
   onToggle: (id: string) => void;
   onAddSkill: (name: string) => void;
+  onRemoveMissing?: (name: string) => void;
+  onAddMissing?: (name: string) => void;
 }) {
-  const [newSkill, setNewSkill] = useState('');
+  const [newMissing, setNewMissing] = useState('');
 
-  const handleAdd = () => {
-    if (newSkill.trim()) { onAddSkill(newSkill.trim()); setNewSkill(''); }
+  const handleAddMissing = () => {
+    if (newMissing.trim() && onAddMissing) { onAddMissing(newMissing.trim()); setNewMissing(''); }
   };
 
   return (
@@ -419,24 +424,6 @@ function SkillReviewScreen({ skills, missing, onToggle, onAddSkill }: {
           ))}
         </div>
 
-        {/* Add skill */}
-        <div className="flex gap-2 mt-4">
-          <input
-            type="text"
-            value={newSkill}
-            onChange={e => setNewSkill(e.target.value)}
-            placeholder="+ Add a skill..."
-            onKeyDown={e => e.key === 'Enter' && handleAdd()}
-            className="flex-1 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all"
-          />
-          <button
-            onClick={handleAdd}
-            disabled={!newSkill.trim()}
-            className="px-4 py-2 rounded-lg bg-white/10 text-gray-300 text-sm font-medium hover:bg-white/15 transition-colors disabled:opacity-40"
-          >
-            Add
-          </button>
-        </div>
       </div>
 
       {/* Missing skills */}
@@ -448,10 +435,34 @@ function SkillReviewScreen({ skills, missing, onToggle, onAddSkill }: {
         </div>
         <div className="flex flex-wrap gap-2">
           {missing.map(skill => (
-            <span key={skill} className="px-3 py-1.5 rounded-full text-sm border border-amber-500/20 bg-amber-500/10 text-amber-400">
+            <span key={skill} className="group flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm border border-amber-500/20 bg-amber-500/10 text-amber-400">
               {skill}
+              {onRemoveMissing && (
+                <button onClick={() => onRemoveMissing(skill)} className="hover:text-amber-200 ml-1">
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              )}
             </span>
           ))}
+        </div>
+
+        {/* Add missing skill */}
+        <div className="flex gap-2 mt-4">
+          <input
+            type="text"
+            value={newMissing}
+            onChange={e => setNewMissing(e.target.value)}
+            placeholder="+ Add a skill to learn..."
+            onKeyDown={e => e.key === 'Enter' && handleAddMissing()}
+            className="flex-1 px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/20 transition-all"
+          />
+          <button
+            onClick={handleAddMissing}
+            disabled={!newMissing.trim()}
+            className="px-4 py-2 rounded-lg bg-white/10 text-gray-300 text-sm font-medium hover:bg-white/15 transition-colors disabled:opacity-40"
+          >
+            Add
+          </button>
         </div>
       </div>
     </div>
@@ -614,7 +625,7 @@ function GeneratingScreen({ name }: { name: string }) {
   );
 }
 
-function SuccessScreen({ name, role, onEnter }: { name: string; role: string; onEnter: () => void }) {
+function SuccessScreen({ name, role, readinessScore, estimatedWeeks, onEnter }: { name: string; role: string; readinessScore: number; estimatedWeeks: number; onEnter: () => void }) {
   const [visible, setVisible] = useState(false);
   useEffect(() => { setTimeout(() => setVisible(true), 200); }, []);
 
@@ -634,8 +645,8 @@ function SuccessScreen({ name, role, onEnter }: { name: string; role: string; on
       <div className="grid grid-cols-3 gap-4 mb-10">
         {[
           { label: 'Career Goal', value: role, sub: '' },
-          { label: 'Readiness', value: '46%', sub: 'Current level' },
-          { label: 'Est. Timeline', value: '6 mo', sub: 'At 10 hrs/wk' },
+          { label: 'Readiness', value: `${readinessScore}%`, sub: 'Current level' },
+          { label: 'Est. Timeline', value: `${estimatedWeeks} wks`, sub: 'Estimated' },
         ].map(stat => (
           <div key={stat.label} className="p-4 rounded-2xl border border-white/5 bg-white/3">
             <div className="text-lg font-black text-white mb-1">{stat.value}</div>
@@ -677,6 +688,9 @@ export default function OnboardingPage() {
     studyHours: '5-10',
     learningPrefs: ['labs'],
     experience: 'beginner',
+    readinessScore: 0,
+    roadmap: [],
+    estimatedWeeks: 0,
   });
 
   const update = (key: keyof OnboardingState, val: unknown) =>
@@ -719,6 +733,9 @@ export default function OnboardingPage() {
         if (res.success && res.data) {
           update('detectedSkills', (res.data.matched_skills || []).map((s: string, i: number) => ({ id: String(i), name: s, confirmed: true })));
           update('missingSkills', res.data.missing_skills || []);
+          update('readinessScore', res.data.readiness_score || 0);
+          update('roadmap', res.data.roadmap || []);
+          update('estimatedWeeks', res.data.estimated_weeks || 0);
         }
       } catch (err) {
         console.error(err);
@@ -731,6 +748,8 @@ export default function OnboardingPage() {
       missing={state.missingSkills}
       onToggle={id => update('detectedSkills', state.detectedSkills.map(s => s.id === id ? { ...s, confirmed: !s.confirmed } : s))}
       onAddSkill={name => update('detectedSkills', [...state.detectedSkills, { id: Date.now().toString(), name, confirmed: true }])}
+      onRemoveMissing={name => update('missingSkills', state.missingSkills.filter(s => s !== name))}
+      onAddMissing={name => update('missingSkills', [...state.missingSkills, name])}
     />,
     <PreferencesScreen
       key="prefs"
@@ -738,7 +757,7 @@ export default function OnboardingPage() {
       onChange={(k, v) => update(k as keyof OnboardingState, v)}
     />,
     <GeneratingScreen key="generating" name={state.name} />,
-    <SuccessScreen key="success" name={state.name} role={state.targetRole || 'Penetration Tester'} onEnter={() => router.push('/dashboard')} />,
+    <SuccessScreen key="success" name={state.name} role={state.targetRole || 'Penetration Tester'} readinessScore={state.readinessScore} estimatedWeeks={state.estimatedWeeks} onEnter={() => router.push('/dashboard')} />,
   ];
 
   return (
@@ -779,11 +798,19 @@ export default function OnboardingPage() {
               if (step === 4) {
                 next();
                 try {
-                   // At this point we could send learning preferences/confirmed skills 
-                   // to a 'save assessment' endpoint if we built one, or it's implicitly handled.
-                   // The API '/career/analyze' also returned a readiness score and roadmap which we could save.
-                } catch(e) {}
-                setTimeout(() => setGeneratingDone(true), 2000);
+                   await api.saveAssessment({
+                     career_goal: state.targetRole || 'Penetration Tester',
+                     matched_skills: state.detectedSkills.filter(s => s.confirmed).map(s => s.name),
+                     missing_skills: state.missingSkills,
+                     readiness_score: state.readinessScore,
+                     roadmap: state.roadmap,
+                     estimated_weeks: state.estimatedWeeks,
+                     study_hours: parseInt(state.studyHours) || 10
+                   });
+                } catch(e) {
+                   console.error("Failed to save assessment", e);
+                }
+                setTimeout(() => setGeneratingDone(true), 1500);
               } else {
                 next();
               }

@@ -24,7 +24,10 @@ class CareerOrchestrator:
         career_goal: str,
         study_hours: int = 10,
     ) -> Tuple[Assessment, Roadmap]:
-        assessment = self.career_service.analyze(user_skills, career_goal)
+        from app.domain.models import CyberProfile, Skill
+        skills = [Skill(name=s, category="", difficulty="beginner") for s in user_skills]
+        profile = CyberProfile(skills=skills)
+        assessment = self.career_service.analyze(profile, career_goal)
         roadmap = self.roadmap_service.generate(assessment, study_hours)
         return assessment, roadmap
 

@@ -43,6 +43,15 @@ export const api = {
     return handleResponse(res);
   },
 
+  saveAssessment: async (data: any) => {
+    const res = await fetch(`${API_BASE}/career/save`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return handleResponse(res);
+  },
+
   chat: async (message: string) => {
     const res = await fetch(`${API_BASE}/mentor/chat`, {
       method: 'POST',
