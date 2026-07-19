@@ -1,10 +1,10 @@
 from typing import List
 
-from app.domain.models import UserProfile, Assessment, Roadmap
+from app.domain.models import CyberProfile, Assessment, Roadmap
 
 
 class ResumeService:
-    def parse(self, file_path: str) -> UserProfile:
+    def parse(self, file_path: str) -> CyberProfile:
         raise NotImplementedError()
 
     def extract_skills(self, text: str) -> list:

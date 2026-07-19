@@ -7,7 +7,7 @@ from passlib.context import CryptContext
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-SECRET_KEY = os.getenv("SECRET_KEY", "cyberpath-dev-secret-key-2026")
+SECRET_KEY = os.getenv("SECRET_KEY") or os.getenv("JWT_SECRET", "cyberpath-dev-secret-key-2026")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
 

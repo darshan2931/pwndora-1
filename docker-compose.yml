@@ -24,7 +24,7 @@ services:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-cyberpath}:${POSTGRES_PASSWORD:-password123}@db:5432/${POSTGRES_DB:-cyberpath_db}
       - MISTRAL_API_KEY=${MISTRAL_API_KEY}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
-      - JWT_SECRET=${JWT_SECRET:-super_secret_jwt_key_for_development}
+      - SECRET_KEY=${SECRET_KEY:-super_secret_jwt_key_for_development}
     depends_on:
       db:
         condition: service_healthy
@@ -37,7 +37,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
+      - NEXT_PUBLIC_API_URL=
     depends_on:
       - backend
 

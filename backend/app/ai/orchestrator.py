@@ -33,6 +33,7 @@ class AIOrchestrator:
         task_prompt: str,
         template_name: str,
         context_data: dict = None,
+        raw_context: str = None,
         json_mode: bool = False,
         **kwargs
     ) -> Any:
@@ -41,7 +42,9 @@ class AIOrchestrator:
             return self._mock_fallback(template_name)
             
         context_str = ""
-        if context_data:
+        if raw_context:
+            context_str = raw_context
+        elif context_data:
             context_str = ContextBuilder.build_user_context(**context_data)
             
         system_prompt = PromptBuilder.build(template_name, context=context_str, **kwargs)
@@ -74,13 +77,15 @@ class AIOrchestrator:
             
         return response_text
             
-    async def chat_session(self, history: list[dict], template_name: str, context_data: dict = None) -> str:
+    async def chat_session(self, history: list[dict], template_name: str, context_data: dict = None, raw_context: str = None) -> str:
         """Executes a multi-turn chat with fallback."""
         if not self.is_available():
             return "I am running in mock mode. Please configure an API key to enable live chat."
             
         context_str = ""
-        if context_data:
+        if raw_context:
+            context_str = raw_context
+        elif context_data:
             context_str = ContextBuilder.build_user_context(**context_data)
             
         system_prompt = PromptBuilder.build(template_name, context=context_str)

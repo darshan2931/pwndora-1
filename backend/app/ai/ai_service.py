@@ -22,16 +22,15 @@ class AIService:
         )
         return ResponseParser.parse_resume_skills(raw_json)
 
-    async def mentor_chat(self, question: str, history: list[dict], context_data: dict) -> str:
+    async def mentor_chat(self, question: str, context: str = "", session_id: str = "default", history: list[dict] = None) -> str:
         """Processes a mentor chat request."""
-        # Ensure the question is part of history or appended
-        chat_history = list(history)
+        chat_history = list(history or [])
         chat_history.append({"role": "user", "content": question})
-        
+
         return await self.orchestrator.chat_session(
             history=chat_history,
             template_name="mentor",
-            context_data=context_data
+            raw_context=context or None
         )
 
     async def explain_roadmap(self, roadmap_json: str, context_data: dict) -> str:
@@ -102,4 +101,20 @@ class AIService:
             career_goal=career_goal,
             json_mode=False
         )
+
+    async def generate_proactive_greeting(self, context_str: str) -> str:
+        """Generates a proactive greeting based on user context."""
+        prompt = "Generate a brief, encouraging greeting for the user."
+
+        return await self.orchestrator.execute_task(
+            task_prompt=prompt,
+            template_name="mentor",
+            raw_context=context_str,
+            json_mode=False
+        )
+
+    def clear_session(self, session_id: str) -> None:
+        """Clears cached chat session data."""
+        if hasattr(self.orchestrator, '_chat_sessions'):
+            self.orchestrator._chat_sessions.pop(session_id, None)
 

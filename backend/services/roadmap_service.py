@@ -86,3 +86,10 @@ class RoadmapService:
             total_hours=total_hours,
             estimated_weeks=estimated_weeks
         )
+
+    def generate(self, assessment, study_hours: int = 10):
+        """Generate roadmap from domain Assessment model."""
+        from app.domain.models import CyberProfile
+        profile = CyberProfile(skills=list(assessment.matched_skills or []))
+        target = str(assessment.target_career.title) if hasattr(assessment, 'target_career') else ""
+        return self.generate_timeline(profile, target)

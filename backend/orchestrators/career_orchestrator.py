@@ -31,6 +31,11 @@ class CareerOrchestrator:
         roadmap = self.roadmap_service.generate(assessment, study_hours)
         return assessment, roadmap
 
+    def _profile_from_user_skills(self, user_skills: list[str]):
+        from app.domain.models import CyberProfile, Skill
+        skills = [Skill(name=s, category="", difficulty="beginner") for s in user_skills]
+        return CyberProfile(skills=skills)
+
     async def analyze_with_ai(
         self,
         user_skills: list[str],
@@ -44,13 +49,24 @@ class CareerOrchestrator:
 
         if self.ai_service:
             try:
-                ai_summary, confidence = await self.ai_service.explain_roadmap(assessment, roadmap)
+                ai_summary = await self.ai_service.explain_career(context_data={
+                    "target_role": career_goal,
+                    "readiness_score": assessment.readiness_score,
+                    "known_skills": [s.name for s in assessment.matched_skills],
+                    "missing_skills": [s.name for s in assessment.missing_skills],
+                })
+                confidence = 0.8
             except Exception as e:
                 logger.warning("AI roadmap explanation failed: %s", e)
                 ai_summary = f"Your readiness for {career_goal} is {assessment.readiness_score}%."
                 confidence = 0.5
 
-        projects = self.recommendation_service.recommend_projects(assessment)
+        rec = self.recommendation_service.get_next_recommendation(
+            self._profile_from_user_skills(user_skills), career_goal
+        )
+        projects = []
+        if rec.next_project:
+            projects.append(rec.next_project)
 
         return {
             "career_goal": career_goal,

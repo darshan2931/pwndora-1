@@ -90,15 +90,29 @@ class CyberProfile(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
+class Assessment(Base):
+    __tablename__ = "assessments"
+
+    id = Column(PortableUUID(), primary_key=True, default=uuid.uuid4)
+    user_id = Column(PortableUUID(), nullable=False, index=True)
+    career_goal = Column(String(100), nullable=False)
+    readiness_score = Column(Integer, default=0)
+    matched_skills = Column(PortableJSON(), default=list)
+    missing_skills = Column(PortableJSON(), default=list)
+    weekly_hours = Column(Integer, default=10)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
 class Roadmap(Base):
     __tablename__ = "roadmaps"
 
     id = Column(PortableUUID(), primary_key=True, default=uuid.uuid4)
-    profile_id = Column(PortableUUID(), unique=True, nullable=False)
+    assessment_id = Column(PortableUUID(), nullable=False, index=True)
     steps = Column(PortableJSON(), default=list)
     total_hours = Column(Integer, default=0)
     estimated_weeks = Column(Integer, default=0)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
 
 class ChatMemory(Base):
@@ -121,6 +135,28 @@ class ResumeAnalysis(Base):
     file_path = Column(String(255), nullable=False)
     career_goal = Column(String(100), nullable=False)
     extracted_data = Column(PortableJSON(), default=dict)
+    feedback = Column(Text, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class ChatHistory(Base):
+    __tablename__ = "chat_history"
+
+    id = Column(PortableUUID(), primary_key=True, default=uuid.uuid4)
+    user_id = Column(PortableUUID(), nullable=False, index=True)
+    assessment_id = Column(PortableUUID(), nullable=True)
+    session_id = Column(String(100), nullable=False, index=True)
+    question = Column(Text, nullable=False)
+    answer = Column(Text, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class ResumeReview(Base):
+    __tablename__ = "resume_reviews"
+
+    id = Column(PortableUUID(), primary_key=True, default=uuid.uuid4)
+    user_id = Column(PortableUUID(), nullable=False, index=True)
+    career_goal = Column(String(100), nullable=False)
     feedback = Column(Text, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 

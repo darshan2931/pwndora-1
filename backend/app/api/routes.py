@@ -11,7 +11,7 @@ from sqlalchemy import select
 from utils.validators import sanitize_string, sanitize_filename, validate_skills_list, validate_career_goal, validate_study_hours
 from app.api.deps import get_current_user
 from models.sqlalchemy_models import User, ChatMemory
-from database.session import get_db
+from database.session import get_db, SessionLocal
 from app.api.auth import router as auth_router
 
 logger = logging.getLogger(__name__)
@@ -310,6 +310,9 @@ async def mentor_chat(
     try:
         summary_data = await ai_svc.summarize_session(history, session_id)
         
+        if isinstance(summary_data, str):
+            summary_data = {"summary": summary_data, "important_facts": [], "next_goal": ""}
+
         # 4. Save to DB
         new_memory = ChatMemory(
             user_id=str(current_user.id),

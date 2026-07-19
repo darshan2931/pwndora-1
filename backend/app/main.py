@@ -36,7 +36,7 @@ async def lifespan(app: FastAPI):
     global _ai_service
 
     from database.session import engine, Base
-    from models.sqlalchemy_models import User, CyberProfile, Roadmap, ChatMemory, ResumeAnalysis, Skill, Project  # noqa: F401
+    from models.sqlalchemy_models import User, CyberProfile, Assessment, Roadmap, ChatMemory, ChatHistory, ResumeAnalysis, ResumeReview, Skill, Project  # noqa: F401
     Base.metadata.create_all(bind=engine)
     logger.info("Database tables verified/created.")
 
