@@ -1,44 +1,16 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
-import Navbar from '@/components/Navbar';
-import Footer from '@/components/Footer';
-import ErrorBoundary from '@/components/ui/ErrorBoundary';
-import { ThemeProvider } from '@/components/ThemeProvider';
-import { ToastProvider } from '@/components/ui/toast/toast-provider';
-import { AuthProvider } from '@/components/AuthContext';
 import './globals.css';
 
-const inter = Inter({ subsets: ['latin'] });
-
 export const metadata: Metadata = {
-  title: 'CyberPath AI - Cybersecurity Career Intelligence',
-  description: 'AI-powered platform for personalized cybersecurity career guidance, skill assessment, and learning roadmaps.',
+  title: 'CyberPath AI — Cybersecurity Career Copilot',
+  description: 'The AI-powered career operating system for cybersecurity professionals.',
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={inter.className} suppressHydrationWarning>
-      <body>
-        <ThemeProvider>
-          <ToastProvider>
-            <AuthProvider>
-              <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-2 focus:left-2 focus:bg-primary focus:text-white focus:px-4 focus:py-2 focus:rounded-lg">
-                Skip to content
-              </a>
-              <Navbar />
-              <main id="main-content" className="min-h-[calc(100vh-8rem)]">
-                <ErrorBoundary>
-                  {children}
-                </ErrorBoundary>
-              </main>
-              <Footer />
-            </AuthProvider>
-          </ToastProvider>
-        </ThemeProvider>
+    <html lang="en" className="dark" suppressHydrationWarning>
+      <body className="bg-[#09090b] text-[#fafafa] antialiased">
+        {children}
       </body>
     </html>
   );

@@ -8,10 +8,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 # pyrefly: ignore [missing-import]
-from ai.service import AIClient, AIService
-# pyrefly: ignore [missing-import]
-from ai.gemini_client import GeminiClient
-# pyrefly: ignore [missing-import]
+from app.ai.ai_service import AIService
 from core.middleware import AccessLogMiddleware
 # pyrefly: ignore [missing-import]
 from utils.middleware.rate_limiter import RateLimitMiddleware
@@ -39,34 +36,19 @@ async def lifespan(app: FastAPI):
     global _ai_service
 
     from database.session import engine, Base
-    from models.sqlalchemy_models import Assessment, Roadmap, ChatHistory, KnowledgeCache  # noqa: F401
+    from models.sqlalchemy_models import Assessment, Roadmap, ChatHistory, KnowledgeCache, ResumeReview  # noqa: F401
     Base.metadata.create_all(bind=engine)
     logger.info("Database tables verified/created.")
 
-    # Initialize Mistral client for assessment/career (resume, roadmap, career explanation)
-    mistral_client = None
-    mistral_keys_str = os.getenv("MISTRAL_API_KEYS", "") or os.getenv("MISTRAL_API_KEY", "")
-    mistral_keys = [k.strip() for k in mistral_keys_str.split(",") if k.strip()]
-    if mistral_keys:
-        mistral_client = AIClient(api_keys=mistral_keys)
-        logger.info("Mistral client initialized (%d key(s))", len(mistral_keys))
+    # Initialize new AI Intelligence Layer
+    # Defaults to 'mistral' provider, reads from MISTRAL_API_KEY or GEMINI_API_KEY inside the factory
+    _ai_service = AIService(provider_name="mistral")
+    
+    if _ai_service.is_configured():
+        logger.info("AI Intelligence Layer initialized successfully.")
     else:
-        logger.warning("No MISTRAL_API_KEY found. Assessment features will be limited.")
-
-    # Initialize Gemini client for AI mentor chat
-    gemini_client = None
-    gemini_keys_str = os.getenv("GEMINI_API_KEY", "")
-    gemini_keys = [k.strip() for k in gemini_keys_str.split(",") if k.strip()]
-    if gemini_keys:
-        gemini_client = GeminiClient(api_keys=gemini_keys)
-        logger.info("Gemini client initialized (%d key(s))", len(gemini_keys))
-    else:
-        logger.warning("No GEMINI_API_KEY found. AI mentor will be unavailable.")
-
-    if mistral_client or gemini_client:
-        _ai_service = AIService(mistral_client=mistral_client, gemini_client=gemini_client)
-    else:
-        logger.warning("No AI API keys found. AI features will be unavailable.")
+        logger.warning("No AI API keys found. Running in MOCK mode.")
+        
     yield
     _ai_service = None
 

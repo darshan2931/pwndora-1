@@ -1,119 +1,144 @@
+// ─── Core Entities ────────────────────────────────────────────────────────────
+
 export interface Skill {
+  id: string;
   name: string;
   category: string;
-  difficulty: 'beginner' | 'intermediate' | 'advanced';
-  prerequisites?: string[];
-  estimated_hours?: number;
-  related_tools?: string[];
-  learning_resources?: string[];
-}
-
-export interface Career {
-  id: string;
-  title: string;
-  description?: string;
-  required_skills?: string[];
-  optional_skills?: string[];
-  certifications?: string[];
-  projects?: string[];
-  estimated_weeks?: number;
-}
-
-export interface Assessment {
-  success: boolean;
-  data: AssessmentData;
-}
-
-export interface AssessmentData {
-  career_goal: string;
-  career_readiness: number;
-  matched_skills: string[];
-  missing_skills: string[];
-  matched_certifications?: string[];
-  recommended_projects?: ProjectRecommendation[];
-  roadmap?: RoadmapStep[];
-  estimated_weeks?: number;
-  ai_summary?: string;
-  study_hours?: number;
-}
-
-export interface RoadmapStep {
-  step: number;
-  skill: string;
-  category: string;
-  estimated_hours: number;
-  prerequisites: string[];
-  resources?: string[];
-  projects?: string[];
+  confirmed: boolean;
+  level: 'beginner' | 'intermediate' | 'advanced';
 }
 
 export interface Project {
-  id?: string;
+  id: string;
   title: string;
-  description?: string;
-  difficulty: string;
+  description: string;
+  difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
+  estimatedHours: number;
   skills: string[];
-  estimated_hours?: number;
-  estimated_time?: string;
-}
-
-export interface ProjectRecommendation {
-  title: string;
-  difficulty: string;
-  skills: string[];
-  estimated_hours: number;
-  reason?: string;
-}
-
-export interface MentorMessage {
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp?: number;
-}
-
-export interface MentorChatResponse {
-  success: boolean;
-  response: string;
-  session_id?: string;
-}
-
-export interface CareerAnalysisResponse {
-  success: boolean;
-  data: AssessmentData;
-}
-
-export interface CareersResponse {
-  success: boolean;
-  data: Career[];
-}
-
-export interface ProjectsResponse {
-  success: boolean;
-  data: Project[];
-}
-
-export interface SkillCategory {
-  name: string;
-  skills: string[];
-}
-
-export interface SkillsResponse {
-  success: boolean;
-  data: {
-    categories: SkillCategory[];
-  };
-}
-
-export interface CertificationsResponse {
-  success: boolean;
-  data: Certification[];
+  completed: boolean;
+  completedAt?: string;
+  githubUrl?: string;
 }
 
 export interface Certification {
+  id: string;
   name: string;
-  vendor: string;
-  difficulty: string;
-  recommended_for: string[];
-  prerequisites?: string[];
-  study_resources?: string[];
+  issuer: string;
+  status: 'planned' | 'in-progress' | 'completed';
+  completedAt?: string;
+  credentialId?: string;
+}
+
+export interface Achievement {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  earnedAt: string;
+  type: 'streak' | 'skill' | 'project' | 'milestone';
+}
+
+// ─── Roadmap ──────────────────────────────────────────────────────────────────
+
+export type RoadmapNodeType = 'skill' | 'project' | 'certification' | 'milestone';
+export type RoadmapNodeStatus = 'completed' | 'in-progress' | 'available' | 'locked';
+
+export interface RoadmapNode {
+  id: string;
+  title: string;
+  description: string;
+  type: RoadmapNodeType;
+  status: RoadmapNodeStatus;
+  estimatedHours: number;
+  difficulty: 'Beginner' | 'Intermediate' | 'Advanced';
+  resources: Resource[];
+  skills: string[];
+  prerequisites: string[];
+  completedAt?: string;
+}
+
+export interface Resource {
+  id: string;
+  title: string;
+  type: 'video' | 'article' | 'lab' | 'book' | 'course';
+  url: string;
+  duration?: string;
+  free: boolean;
+}
+
+// ─── Profile ──────────────────────────────────────────────────────────────────
+
+export type ExperienceLevel = 'Beginner' | 'Intermediate' | 'Advanced';
+export type LearningPreference = 'videos' | 'reading' | 'labs' | 'projects';
+
+export interface CyberProfile {
+  id: string;
+  name: string;
+  email: string;
+  avatarInitials: string;
+  targetRole: string;
+  targetRoleCategory: string;
+  experience: ExperienceLevel;
+  readiness: number;
+  weeklyStudyHours: number;
+  learningPreferences: LearningPreference[];
+  knownSkills: Skill[];
+  missingSkills: Skill[];
+  completedSkills: string[];
+  projects: Project[];
+  certifications: Certification[];
+  achievements: Achievement[];
+  totalStudyHours: number;
+  currentStreak: number;
+  longestStreak: number;
+  joinedAt: string;
+  lastActive: string;
+  roadmapProgress: number;
+}
+
+// ─── Mentor ───────────────────────────────────────────────────────────────────
+
+export interface MentorMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: string;
+}
+
+export interface MentorContext {
+  todayMission: RoadmapNode | null;
+  nextMilestone: RoadmapNode | null;
+  lastCompleted: RoadmapNode | null;
+  recentAchievement: Achievement | null;
+  currentStreak: number;
+  weeklyProgress: number;
+  estimatedTimeToReady: string;
+}
+
+// ─── Dashboard ────────────────────────────────────────────────────────────────
+
+export interface WeeklyProgress {
+  day: string;
+  hours: number;
+  goal: number;
+}
+
+export interface DailyMission {
+  node: RoadmapNode;
+  estimatedMinutes: number;
+  priority: 'high' | 'medium' | 'low';
+}
+
+// ─── Assessment ───────────────────────────────────────────────────────────────
+
+export interface AssessmentResult {
+  detectedSkills: Skill[];
+  missingSkills: Skill[];
+  detectedProjects: Project[];
+  detectedCertifications: Certification[];
+  careerMatch: number;
+  readinessScore: number;
+  estimatedWeeks: number;
+  strengths: string[];
+  gaps: string[];
 }

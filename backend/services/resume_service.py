@@ -1,7 +1,7 @@
 import os
 import re
 from typing import List
-from app.domain.models import UserProfile, Skill
+from app.domain.models import CyberProfile, Skill
 from knowledge.loader import knowledge_loader
 from services.service_interfaces import ResumeService as IResumeService
 
@@ -10,11 +10,39 @@ class ResumeService(IResumeService):
         self.ai_service = ai_service
         self.kb = knowledge_loader
 
-    def parse(self, file_path: str) -> UserProfile:
+    def parse(self, file_path: str) -> CyberProfile:
         text = self._extract_text(file_path)
         skills = self.extract_skills(text)
         certs = self._detect_certifications(text)
-        return UserProfile(skills=skills, certifications=certs)
+        
+        projects = []
+        education = []
+        
+        # If AI is available, use it to pull out deeper profile info
+        if self.ai_service:
+            try:
+                import asyncio
+                from concurrent.futures import ThreadPoolExecutor
+                
+                with ThreadPoolExecutor(max_workers=1) as executor:
+                    future = executor.submit(
+                        lambda: asyncio.run(self.ai_service.extract_skills_from_resume(text))
+                    )
+                    ai_result = future.result()
+                    
+                if "projects" in ai_result:
+                    projects = ai_result["projects"]
+                if "education" in ai_result:
+                    education = ai_result["education"]
+            except Exception as e:
+                pass
+                
+        return CyberProfile(
+            skills=skills, 
+            certifications=certs,
+            projects_completed=projects,
+            education=education
+        )
 
     def _extract_text(self, file_path: str) -> str:
         ext = os.path.splitext(file_path)[1].lower()

@@ -8,6 +8,7 @@ class Skill:
     category: str
     difficulty: str  # beginner, intermediate, advanced
     prerequisites: List[str] = field(default_factory=list)
+    unlocks: List[str] = field(default_factory=list)
     estimated_hours: int = 10
     related_tools: List[str] = field(default_factory=list)
     learning_resources: List[str] = field(default_factory=list)
@@ -25,16 +26,21 @@ class Career:
 
 
 @dataclass
-class UserProfile:
+class CyberProfile:
     name: Optional[str] = None
     skills: List[Skill] = field(default_factory=list)
     certifications: List[str] = field(default_factory=list)
     experience_years: int = 0
+    education: List[str] = field(default_factory=list)
+    projects_completed: List[str] = field(default_factory=list)
+    labs_completed: int = 0
+    streak_days: int = 0
+    achievements: List[str] = field(default_factory=list)
 
 
 @dataclass
 class Assessment:
-    user_profile: UserProfile
+    cyber_profile: CyberProfile
     target_career: Career
     matched_skills: List[Skill] = field(default_factory=list)
     missing_skills: List[Skill] = field(default_factory=list)
@@ -66,3 +72,21 @@ class Project:
     estimated_time_hours: int
     description: str = ""
     github_deliverables: List[str] = field(default_factory=list)
+
+
+@dataclass
+class Recommendation:
+    next_skill: Optional[str] = None
+    next_project: Optional[str] = None
+    next_certification: Optional[str] = None
+    reason: str = ""
+    estimated_hours: int = 0
+    difficulty: str = ""
+
+
+@dataclass
+class ChatSummary:
+    session_id: str
+    summary_text: str
+    important_facts: List[str] = field(default_factory=list)
+    next_goal: str = ""

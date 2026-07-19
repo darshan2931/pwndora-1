@@ -10,7 +10,7 @@ from sqlalchemy import select
 
 from utils.validators import sanitize_string, sanitize_filename, validate_skills_list, validate_career_goal, validate_study_hours
 from app.api.deps import get_current_user
-from models.sqlalchemy_models import User, ChatHistory
+from models.sqlalchemy_models import User, ChatMemory
 from database.session import get_db
 from app.api.auth import router as auth_router
 
@@ -41,38 +41,59 @@ def _get_orchestrator():
     return CareerOrchestrator(ai_service=ai_svc)
 
 
-@router.get("/careers")
-async def get_careers():
-    from knowledge.loader import knowledge_loader  # pyrefly: ignore [missing-import]
-    roles = knowledge_loader.get_roles()
-    return {
-        "success": True,
-        "data": [
-            {"id": r["role"].lower().replace(" ", "-"), "title": r["role"], "description": r["description"]}
-            for r in roles
-        ],
-    }
 
 
-@router.get("/knowledge/skills")
-async def get_skills():
-    from knowledge.loader import knowledge_loader  # pyrefly: ignore [missing-import]
-    skills = knowledge_loader.get_skills()
-    categories = {}
-    for skill in skills:
-        cat = skill.get("category", "Other")
-        if cat not in categories:
-            categories[cat] = []
-        categories[cat].append(skill["name"])
-    return {
-        "success": True,
-        "data": {
-            "categories": [
-                {"name": cat, "skills": skill_list}
-                for cat, skill_list in categories.items()
-            ],
-        },
-    }
+@router.get("/assessments/{assessment_id}")
+async def get_assessment(assessment_id: str, current_user: User = Depends(get_current_user)):
+    assessment_id = sanitize_string(assessment_id, max_length=100)
+    if not assessment_id:
+        raise HTTPException(status_code=400, detail="Invalid assessment ID")
+
+    try:
+        from repositories.repositories import AssessmentRepository, RoadmapRepository  # pyrefly: ignore [missing-import]
+        from knowledge.loader import knowledge_loader  # pyrefly: ignore [missing-import]
+        assessment_repo = AssessmentRepository()
+        roadmap_repo = RoadmapRepository()
+
+        db_assess = assessment_repo.get_by_id(assessment_id)
+        if not db_assess:
+            raise HTTPException(status_code=404, detail="Assessment not found")
+            
+        if str(db_assess.user_id) != str(current_user.id):
+            raise HTTPException(status_code=403, detail="Not authorized to view this assessment")
+
+        role_data = knowledge_loader.get_role(str(db_assess.career_goal)) or {}
+
+        matched = [str(n) for n in (db_assess.matched_skills or [])]
+        missing = [str(n) for n in (db_assess.missing_skills or [])]
+
+        roadmap_data: list = []
+        db_roadmap = roadmap_repo.get_by_assessment(assessment_id)
+        if db_roadmap:
+            roadmap_data = db_roadmap.steps or []
+
+        return {
+            "success": True,
+            "data": {
+                "assessment_id": str(db_assess.id),
+                "career_goal": str(db_assess.career_goal),
+                "career_description": role_data.get("description", ""),
+                "career_readiness": db_assess.readiness_score,
+                "matched_skills": matched,
+                "missing_skills": missing,
+                "estimated_weeks": db_roadmap.estimated_weeks if db_roadmap else 0,
+                "study_hours": db_assess.weekly_hours,
+                "roadmap": roadmap_data,
+                "created_at": str(db_assess.created_at) if db_assess.created_at else None,
+            },
+        }
+    except HTTPException:
+        raise
+    except OperationalError:
+        raise HTTPException(status_code=503, detail="Database is unavailable. Please try again later.")
+    except Exception as e:
+        logger.warning("Failed to retrieve assessment: %s", e)
+        raise HTTPException(status_code=500, detail="Failed to retrieve assessment")
 
 
 @router.post("/career/analyze")
@@ -100,14 +121,11 @@ async def analyze_career(
         if resume.size and resume.size > MAX_FILE_SIZE:
             raise HTTPException(status_code=400, detail="File too large. Maximum size is 5MB.")
 
-        safe_filename = sanitize_filename(resume.filename or "upload")
-        temp_dir = os.path.join(os.path.dirname(__file__), "temp_uploads")
-        os.makedirs(temp_dir, exist_ok=True)
-        temp_file_path = os.path.join(temp_dir, safe_filename)
-        try:
-            with open(temp_file_path, "wb") as buffer:
-                shutil.copyfileobj(resume.file, buffer)
+        from services.storage_service import StorageService
+        storage = StorageService()
+        temp_file_path = storage.save_upload(resume)
 
+        try:
             ai_svc = None
             try:
                 ai_svc = _get_ai_service()
@@ -122,11 +140,7 @@ async def analyze_career(
             logger.error("Failed to parse resume: %s", e)
             raise HTTPException(status_code=500, detail=f"Failed to parse resume: {e}")
         finally:
-            if os.path.exists(temp_file_path):
-                try:
-                    os.remove(temp_file_path)
-                except Exception:
-                    pass
+            pass
     elif manual_skills:
         raw = [s.strip() for s in manual_skills.split(",") if s.strip()]
         extracted_skills = validate_skills_list(raw)
@@ -194,96 +208,39 @@ async def save_assessment(request: dict, current_user: User = Depends(get_curren
         raise HTTPException(status_code=500, detail="Failed to save assessment")
 
 
-@router.get("/assessments/{assessment_id}")
-async def get_assessment(assessment_id: str, current_user: User = Depends(get_current_user)):
-    assessment_id = sanitize_string(assessment_id, max_length=100)
-    if not assessment_id:
-        raise HTTPException(status_code=400, detail="Invalid assessment ID")
 
-    try:
-        from repositories.repositories import AssessmentRepository, RoadmapRepository  # pyrefly: ignore [missing-import]
-        from knowledge.loader import knowledge_loader  # pyrefly: ignore [missing-import]
-        assessment_repo = AssessmentRepository()
-        roadmap_repo = RoadmapRepository()
 
-        db_assess = assessment_repo.get_by_id(assessment_id)
-        if not db_assess:
-            raise HTTPException(status_code=404, detail="Assessment not found")
+
+@router.get("/mentor/greeting")
+async def get_mentor_greeting(current_user: User = Depends(get_current_user)):
+    from repositories.repositories import AssessmentRepository, RoadmapRepository
+    from app.ai.context_builder import ContextBuilder
+    
+    assessment_repo = AssessmentRepository()
+    roadmap_repo = RoadmapRepository()
+    
+    # Get latest assessment
+    db_assess = assessment_repo.get_by_user_id(str(current_user.id))
+    if not db_assess:
+        db_assess = None
+    else:
+        # get_by_user_id might return a list, take first or sort
+        if isinstance(db_assess, list):
+            db_assess = db_assess[-1] if db_assess else None
             
-        if str(db_assess.user_id) != str(current_user.id):
-            raise HTTPException(status_code=403, detail="Not authorized to view this assessment")
-
-        role_data = knowledge_loader.get_role(str(db_assess.career_goal)) or {}
-
-        matched = [str(n) for n in (db_assess.matched_skills or [])]
-        missing = [str(n) for n in (db_assess.missing_skills or [])]
-
-        roadmap_data: list = []
-        db_roadmap = roadmap_repo.get_by_assessment(assessment_id)
-        if db_roadmap:
-            roadmap_data = db_roadmap.steps or []
-
-        return {
-            "success": True,
-            "data": {
-                "assessment_id": str(db_assess.id),
-                "career_goal": str(db_assess.career_goal),
-                "career_description": role_data.get("description", ""),
-                "career_readiness": db_assess.readiness_score,
-                "matched_skills": matched,
-                "missing_skills": missing,
-                "estimated_weeks": db_roadmap.estimated_weeks if db_roadmap else 0,
-                "study_hours": db_assess.weekly_hours,
-                "roadmap": roadmap_data,
-                "created_at": str(db_assess.created_at) if db_assess.created_at else None,
-            },
-        }
-    except HTTPException:
-        raise
-    except OperationalError:
-        raise HTTPException(status_code=503, detail="Database is unavailable. Please try again later.")
-    except Exception as e:
-        logger.warning("Failed to retrieve assessment: %s", e)
-        raise HTTPException(status_code=500, detail="Failed to retrieve assessment")
-
-
-@router.post("/career/explain")
-async def explain_career(request: dict):
-    career_goal = sanitize_string(request.get("career_goal", ""), max_length=100)
-    user_skills = request.get("user_skills", [])
-
-    if isinstance(user_skills, str):
-        user_skills = [s.strip() for s in user_skills.split(",") if s.strip()]
-    user_skills = validate_skills_list(user_skills)
-
-    if not career_goal:
-        raise HTTPException(status_code=400, detail="career_goal is required")
-
-    orchestrator = _get_orchestrator()
-    assessment, _ = orchestrator.analyze(user_skills, career_goal)
-
-    ai_svc = None
+    if not db_assess:
+        return {"success": True, "greeting": "Welcome to Cyber Mentor! Please initialize your profile first by uploading your resume."}
+        
+    db_roadmap = roadmap_repo.get_by_assessment(str(db_assess.id))
+    context_str = ContextBuilder.build_mentor_context(current_user, db_assess, db_roadmap)
+    
     try:
         ai_svc = _get_ai_service()
-    except RuntimeError:
-        pass
-
-    text = ""
-    confidence = 0.5
-    if ai_svc:
-        try:
-            text, confidence = await ai_svc.explain_career(assessment)
-        except RuntimeError as e:
-            logger.warning("Career explanation AI failed, using fallback: %s", e)
-            from ai.demo_data import get_demo_response  # pyrefly: ignore [missing-import]
-            text = get_demo_response("career")
-            confidence = 0.5
-    else:
-        from ai.demo_data import get_demo_response  # pyrefly: ignore [missing-import]
-        text = get_demo_response("career")
-        confidence = 0.5
-
-    return {"success": True, "data": {"explanation": text, "confidence": confidence}}
+        greeting = await ai_svc.generate_proactive_greeting(context_str)
+        return {"success": True, "greeting": greeting}
+    except Exception as e:
+        logger.warning(f"Failed to generate greeting: {e}")
+        return {"success": True, "greeting": "Hello! I am ready to help you with your cybersecurity career. What would you like to focus on today?"}
 
 
 @router.post("/mentor/chat")
@@ -293,7 +250,6 @@ async def mentor_chat(
     db: Session = Depends(get_db)
 ):
     question = sanitize_string(request.get("question", ""), max_length=500)
-    assessment_id = sanitize_string(request.get("assessment_id", ""), max_length=100)
     session_id = sanitize_string(request.get("session_id", ""), max_length=100) or "default"
     if not question:
         raise HTTPException(status_code=400, detail="Question is required")
@@ -302,123 +258,71 @@ async def mentor_chat(
     try:
         ai_svc = _get_ai_service()
     except RuntimeError:
-        pass
+        raise HTTPException(status_code=503, detail="AI Mentor service is not configured.")
 
-    from app.domain.models import Assessment as DomainAssessment, Career as DomainCareer, UserProfile as DomainUserProfile, Skill as DomainSkill
-    from repositories.repositories import AssessmentRepository  # pyrefly: ignore [missing-import]
-    from knowledge.loader import knowledge_loader  # pyrefly: ignore [missing-import]
+    from repositories.repositories import AssessmentRepository, RoadmapRepository
+    from app.ai.context_builder import ContextBuilder
+    
+    assessment_repo = AssessmentRepository()
+    roadmap_repo = RoadmapRepository()
+    
+    db_assess = assessment_repo.get_by_user_id(str(current_user.id))
+    if isinstance(db_assess, list):
+        db_assess = db_assess[-1] if db_assess else None
+        
+    context_str = ""
+    if db_assess:
+        db_roadmap = roadmap_repo.get_by_assessment(str(db_assess.id))
+        context_str = ContextBuilder.build_mentor_context(current_user, db_assess, db_roadmap)
 
-    assessment = None
-    knowledge_context = ""
-    if assessment_id:
-        try:
-            repo = AssessmentRepository()
-            db_assess = repo.get_by_id(assessment_id)
-            if db_assess:
-                role_data = knowledge_loader.get_role(db_assess.career_goal) or {}
-
-                matched_names = db_assess.matched_skills or []
-                missing_names = db_assess.missing_skills or []
-
-                matched_skills = []
-                for name in matched_names:
-                    skill_data = knowledge_loader.get_skill(name) or {"name": name, "category": "", "difficulty": "intermediate"}
-                    matched_skills.append(DomainSkill(**skill_data))
-
-                missing_skills = []
-                for name in missing_names:
-                    skill_data = knowledge_loader.get_skill(name) or {"name": name, "category": "", "difficulty": "intermediate"}
-                    missing_skills.append(DomainSkill(**skill_data))
-
-                career = DomainCareer(
-                    id=db_assess.career_goal.lower().replace(" ", "-"),
-                    title=db_assess.career_goal,
-                    description=role_data.get("description", ""),
-                    required_skills=role_data.get("required_skills", []),
-                )
-
-                assessment = DomainAssessment(
-                    user_profile=DomainUserProfile(skills=matched_skills),
-                    target_career=career,
-                    matched_skills=matched_skills,
-                    missing_skills=missing_skills,
-                    readiness_score=db_assess.readiness_score,
-                )
-
-                cert_names = role_data.get("recommended_certifications", [])
-                optional_skills = role_data.get("optional_skills", [])
-                estimated_duration = role_data.get("estimated_duration", 0)
-
-                cert_details = []
-                for cn in cert_names[:5]:
-                    cert_info = knowledge_loader.get_skill(cn) or {}
-                    cert_details.append(f"- {cn}")
-
-                knowledge_context = (
-                    f"\n\nKnowledge Base Context:\n"
-                    f"- Role Description: {role_data.get('description', '')}\n"
-                    f"- All Required Skills: {role_data.get('required_skills', [])}\n"
-                    f"- Optional Skills: {optional_skills}\n"
-                    f"- Recommended Certifications: {cert_names}\n"
-                    f"- Estimated Learning Duration: {estimated_duration} weeks\n"
-                )
-
-                for skill_name in missing_names[:5]:
-                    skill_info = knowledge_loader.get_skill(skill_name)
-                    if skill_info:
-                        prereqs = skill_info.get("prerequisites", [])
-                        category = skill_info.get("category", "")
-                        difficulty = skill_info.get("difficulty", "")
-                        knowledge_context += f"- Missing Skill '{skill_name}': category={category}, difficulty={difficulty}, prerequisites={prereqs}\n"
-        except Exception as e:
-            logger.warning("Failed to load assessment context from DB: %s", e)
-
-    if not assessment:
-        all_roles = knowledge_loader.get_roles()
-        role_list = [r.get("role", "") for r in all_roles]
-        knowledge_context = (
-            f"\n\nKnowledge Base Context:\n"
-            f"- Available Career Paths: {role_list}\n"
-            f"- The user has not completed an assessment yet.\n"
-        )
-
-    db_histories = db.scalars(
-        select(ChatHistory)
+    # 1. Fetch latest memory
+    db_memory = db.scalars(
+        select(ChatMemory)
         .filter_by(user_id=str(current_user.id), session_id=session_id)
-        .order_by(ChatHistory.created_at.asc())
-    ).all()
+        .order_by(ChatMemory.created_at.desc())
+    ).first()
     
     history = []
-    for h in db_histories:
-        history.append({"role": "user", "content": h.question})
-        history.append({"role": "assistant", "content": h.answer})
+    if db_memory:
+        history.append({"role": "system", "content": f"Previous conversation summary: {db_memory.summary}"})
+        if db_memory.important_facts:
+            facts = ", ".join(db_memory.important_facts)
+            history.append({"role": "system", "content": f"Important facts: {facts}"})
+        if db_memory.next_goal:
+            history.append({"role": "system", "content": f"User's next goal: {db_memory.next_goal}"})
 
-    response = ""
-    if ai_svc:
-        try:
-            response = await ai_svc.mentor_chat(
-                assessment, question,
-                session_id=session_id,
-                knowledge_context=knowledge_context,
-                history=history,
-            )
-        except RuntimeError as e:
-            logger.warning("Mentor chat AI failed, using fallback: %s", e)
-            from ai.demo_data import get_demo_response  # pyrefly: ignore [missing-import]
-            response = get_demo_response("mentor", question=question)
-    else:
-        from ai.demo_data import get_demo_response  # pyrefly: ignore [missing-import]
-        response = get_demo_response("mentor", question=question)
+    # 2. Get AI response
+    try:
+        response = await ai_svc.mentor_chat(
+            question=question,
+            context=context_str,
+            session_id=session_id,
+            history=history,
+        )
+    except RuntimeError as e:
+        logger.warning("Mentor chat AI failed: %s", e)
+        raise HTTPException(status_code=503, detail="AI Mentor service is currently unavailable.")
 
-    new_chat = ChatHistory(
-        user_id=str(current_user.id),
-        assessment_id=assessment_id if assessment_id else "00000000-0000-0000-0000-000000000000",
-        session_id=session_id,
-        question=question,
-        answer=response
-    )
-    db.add(new_chat)
-    db.commit()
+    # 3. Summarize the new turn + history
+    history.append({"role": "user", "content": question})
+    history.append({"role": "assistant", "content": response})
+    
+    try:
+        summary_data = await ai_svc.summarize_session(history, session_id)
+        
+        # 4. Save to DB
+        new_memory = ChatMemory(
+            user_id=str(current_user.id),
+            session_id=session_id,
+            summary=summary_data.get("summary", ""),
+            important_facts=summary_data.get("important_facts", []),
+            next_goal=summary_data.get("next_goal", "")
+        )
+        db.add(new_memory)
+        db.commit()
+    except Exception as e:
+        logger.warning(f"Failed to summarize and save session: {e}")
+        # Even if summary fails, we still return the response to the user
 
     return {"success": True, "response": response}
 
@@ -433,35 +337,6 @@ async def clear_mentor_session(session_id: str):
     return {"success": True, "message": "Session cleared"}
 
 
-@router.get("/projects")
-async def get_projects():
-    from knowledge.loader import knowledge_loader  # pyrefly: ignore [missing-import]
-    projects = knowledge_loader.get_projects()
-    return {"success": True, "data": projects}
-
-
-@router.get("/projects/{skill_name}")
-async def get_projects_for_skill(skill_name: str):
-    from knowledge.loader import knowledge_loader  # pyrefly: ignore [missing-import]
-    projects = knowledge_loader.get_projects_for_skill(skill_name)
-    return {"success": True, "data": projects}
-
-
-@router.get("/certifications/{role_name}")
-async def get_certifications_for_role(role_name: str):
-    from knowledge.loader import knowledge_loader  # pyrefly: ignore [missing-import]
-    certs = knowledge_loader.get_certifications_for_role(role_name)
-    return {"success": True, "data": certs}
-
-
-@router.get("/learning-paths/{career}")
-async def get_learning_path(career: str):
-    from knowledge.loader import knowledge_loader  # pyrefly: ignore [missing-import]
-    path = knowledge_loader.get_learning_path(career)
-    if not path:
-        raise HTTPException(status_code=404, detail="Learning path not found")
-    return {"success": True, "data": path}
-
 
 @router.get("/resources/{skill_name}")
 async def get_skill_resources(skill_name: str):
@@ -471,3 +346,364 @@ async def get_skill_resources(skill_name: str):
     from knowledge.resources import get_free_resources  # pyrefly: ignore [missing-import]
     resources = get_free_resources(skill_name)
     return {"success": True, "data": resources}
+
+
+@router.post("/resume-review/upload")
+async def upload_resume_review(
+    career_goal: str = Form(...),
+    resume: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+):
+    if not career_goal:
+        raise HTTPException(status_code=400, detail="Career goal is required")
+        
+    ext = os.path.splitext(resume.filename or "")[1].lower()
+    if ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(status_code=400, detail=f"Unsupported file type: {ext}. Use PDF, DOCX, or TXT.")
+
+    if resume.size and resume.size > MAX_FILE_SIZE:
+        raise HTTPException(status_code=400, detail="File too large. Maximum size is 5MB.")
+
+    try:
+        from services.storage_service import StorageService
+        storage = StorageService()
+        temp_file_path = storage.save_upload(resume)
+
+        # 1. Extract text from resume
+        from services.resume_service import ResumeService  # pyrefly: ignore [missing-import]
+        resume_svc = ResumeService(ai_service=None) # We just need it for text extraction
+        text = resume_svc.extract_text(temp_file_path)
+
+        # 2. Get AI feedback
+        ai_svc = _get_ai_service()
+        feedback = await ai_svc.review_resume(text, career_goal)
+
+        # 3. Save to DB
+        from repositories.repositories import ResumeReviewRepository  # pyrefly: ignore [missing-import]
+        repo = ResumeReviewRepository()
+        review = repo.create(
+            user_id=str(current_user.id),
+            career_goal=career_goal,
+            feedback=feedback
+        )
+
+        return {
+            "success": True, 
+            "data": {
+                "id": str(review.id),
+                "career_goal": review.career_goal,
+                "feedback": review.feedback,
+                "created_at": str(review.created_at)
+            }
+        }
+    except Exception as e:
+        logger.error("Failed to process resume review: %s", e)
+        raise HTTPException(status_code=500, detail=f"Failed to process resume review: {e}")
+    finally:
+        pass
+
+
+@router.get("/resume-review")
+async def get_resume_reviews(current_user: User = Depends(get_current_user)):
+    from repositories.repositories import ResumeReviewRepository  # pyrefly: ignore [missing-import]
+    repo = ResumeReviewRepository()
+    reviews = repo.get_by_user_id(str(current_user.id))
+    
+    return {
+        "success": True,
+        "data": [
+            {
+                "id": str(r.id),
+                "career_goal": r.career_goal,
+                "feedback": r.feedback,
+                "created_at": str(r.created_at)
+            }
+            for r in reviews
+        ]
+    }
+
+
+@router.post("/roadmap/{roadmap_id}/step/{step_index}/toggle")
+async def toggle_roadmap_step(
+    roadmap_id: str, 
+    step_index: int,
+    current_user: User = Depends(get_current_user)
+):
+    from repositories.repositories import RoadmapRepository, AssessmentRepository  # pyrefly: ignore [missing-import]
+    roadmap_repo = RoadmapRepository()
+    
+    # Optional: verify ownership via assessment
+    
+    roadmap = roadmap_repo.get_by_assessment(roadmap_id) # The frontend might pass assessment_id as roadmap_id
+    if not roadmap:
+        # Fallback to id
+        db = SessionLocal() # we shouldn't do this inline ideally but quick fix if ID differs
+        from models.sqlalchemy_models import Roadmap
+        roadmap = db.query(Roadmap).filter(Roadmap.id == roadmap_id).first()
+        db.close()
+        
+        if not roadmap:
+            raise HTTPException(status_code=404, detail="Roadmap not found")
+
+    steps = list(roadmap.steps) # create a copy
+    
+    if step_index < 0 or step_index >= len(steps):
+        raise HTTPException(status_code=400, detail="Invalid step index")
+        
+    current_status = steps[step_index].get("status", "available")
+    import datetime
+    
+    if current_status == "available":
+        steps[step_index]["status"] = "in-progress"
+    elif current_status == "in-progress":
+        steps[step_index]["status"] = "completed"
+        steps[step_index]["completed_at"] = str(datetime.datetime.now())
+        
+        # Unlock the next step if it exists and is locked
+        if step_index + 1 < len(steps) and steps[step_index + 1].get("status") == "locked":
+            steps[step_index + 1]["status"] = "available"
+    elif current_status == "completed":
+        steps[step_index]["status"] = "in-progress"
+        steps[step_index]["completed_at"] = None
+    
+    updated_roadmap = roadmap_repo.update_steps(str(roadmap.id), steps)
+    
+    return {
+        "success": True,
+        "data": {
+            "roadmap_id": str(updated_roadmap.id),
+            "steps": updated_roadmap.steps
+        }
+    }
+
+
+@router.get("/career/dashboard")
+async def get_dashboard(current_user: User = Depends(get_current_user)):
+    from repositories.repositories import AssessmentRepository, RoadmapRepository
+    from knowledge.loader import knowledge_loader
+    from datetime import datetime, timedelta
+    
+    assessment_repo = AssessmentRepository()
+    roadmap_repo = RoadmapRepository()
+    
+    # Get latest assessment
+    db_assess = assessment_repo.get_by_user_id(str(current_user.id))
+    if isinstance(db_assess, list):
+        db_assess = db_assess[-1] if db_assess else None
+        
+    if not db_assess:
+        # User hasn't onboarded yet
+        return {"success": True, "data": None}
+        
+    db_roadmap = roadmap_repo.get_by_assessment(str(db_assess.id))
+    roadmap_steps = db_roadmap.steps if db_roadmap else []
+    
+    # Build Profile
+    role_data = knowledge_loader.get_role(str(db_assess.career_goal)) or {}
+    
+    # Format skills to frontend Skill interface
+    known = [{"id": s, "name": s, "category": "Skill", "confirmed": True, "level": "beginner"} for s in (db_assess.matched_skills or [])]
+    missing = [{"id": s, "name": s, "category": "Skill", "confirmed": False, "level": "beginner"} for s in (db_assess.missing_skills or [])]
+    
+    roadmap_progress = 0
+    if roadmap_steps:
+        completed = sum(1 for s in roadmap_steps if s.get("status") == "completed")
+        roadmap_progress = int((completed / len(roadmap_steps)) * 100)
+        
+    current_streak = 3  # Hardcoded for demo gamification purposes
+    achievements = []
+    
+    if current_streak >= 3:
+        achievements.append({
+            "id": "consistency_rookie",
+            "title": "Consistency Rookie",
+            "description": "Maintained a 3-day learning streak.",
+            "icon": "Flame",
+            "unlockedAt": str(datetime.utcnow())
+        })
+    if current_streak >= 7:
+        achievements.append({
+            "id": "cyber_scholar",
+            "title": "Cyber Scholar",
+            "description": "Maintained a 7-day learning streak.",
+            "icon": "Star",
+            "unlockedAt": str(datetime.utcnow())
+        })
+    if roadmap_progress == 100:
+        achievements.append({
+            "id": "pathfinder",
+            "title": "Pathfinder",
+            "description": "Completed an entire learning roadmap.",
+            "icon": "Trophy",
+            "unlockedAt": str(datetime.utcnow())
+        })
+    
+    profile = {
+        "id": str(db_assess.id),
+        "name": current_user.name,
+        "email": current_user.email,
+        "avatarInitials": "".join([n[0] for n in current_user.name.split() if n])[:2].upper() or "U",
+        "targetRole": db_assess.career_goal,
+        "targetRoleCategory": "Cybersecurity",
+        "experience": "Beginner",
+        "readiness": db_assess.readiness_score,
+        "weeklyStudyHours": db_assess.weekly_hours or 10,
+        "learningPreferences": ["videos", "labs"],
+        "knownSkills": known,
+        "missingSkills": missing,
+        "completedSkills": [],
+        "projects": [],
+        "certifications": [],
+        "achievements": achievements,
+        "totalStudyHours": 0,
+        "currentStreak": current_streak,
+        "longestStreak": current_streak,
+        "joinedAt": str(current_user.created_at),
+        "lastActive": str(datetime.utcnow()),
+        "roadmapProgress": roadmap_progress
+    }
+    
+    # Build Mentor Context
+    today_mission = next((s for s in roadmap_steps if s.get("status") == "available" or s.get("status") == "in-progress"), None)
+    next_milestone = next((s for s in roadmap_steps if s.get("type") == "milestone" and s.get("status") != "completed"), None)
+    last_completed = next((s for s in reversed(roadmap_steps) if s.get("status") == "completed"), None)
+    
+    mentor_context = {
+        "todayMission": today_mission,
+        "nextMilestone": next_milestone,
+        "lastCompleted": last_completed,
+        "recentAchievement": None,
+        "currentStreak": 1,
+        "weeklyProgress": 0,
+        "estimatedTimeToReady": f"{db_roadmap.estimated_weeks} weeks" if db_roadmap else "Unknown"
+    }
+    
+    # Build Weekly Progress (Mocked for now since Progress model isn't populated)
+    days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+    weekly_progress = [{"day": d, "hours": 0, "goal": (db_assess.weekly_hours or 10) / 7} for d in days]
+    weekly_progress[0]["hours"] = 2  # Fake some progress
+    
+    daily_mission = {
+        "node": today_mission,
+        "estimatedMinutes": today_mission.get("estimatedHours", 1) * 60 if today_mission else 60,
+        "priority": "high"
+    } if today_mission else None
+
+    return {
+        "success": True,
+        "data": {
+            "profile": profile,
+            "roadmap": roadmap_steps,
+            "mentorContext": mentor_context,
+            "weeklyProgress": weekly_progress,
+            "dailyMission": daily_mission
+        }
+    }
+
+
+@router.get("/career/readiness")
+async def get_career_readiness(current_user: User = Depends(get_current_user)):
+    from repositories.repositories import AssessmentRepository
+    from services.career_service import CareerService
+    from app.domain.models import CyberProfile, Skill
+    
+    assessment_repo = AssessmentRepository()
+    db_assess = assessment_repo.get_by_user_id(str(current_user.id))
+    if isinstance(db_assess, list):
+        db_assess = db_assess[-1] if db_assess else None
+        
+    if not db_assess:
+        raise HTTPException(status_code=404, detail="No assessment found")
+        
+    # Reconstruct profile
+    matched = db_assess.matched_skills or []
+    profile = CyberProfile(
+        skills=[Skill(name=s, category="", difficulty="beginner") for s in matched],
+    )
+    
+    svc = CareerService()
+    assessment = svc.analyze(profile, str(db_assess.career_goal))
+    
+    return {
+        "success": True,
+        "data": {
+            "readiness_score": assessment.readiness_score,
+            "career_goal": assessment.target_career.title,
+            "matched_skills": [s.name for s in assessment.matched_skills],
+            "missing_skills": [s.name for s in assessment.missing_skills]
+        }
+    }
+
+
+@router.get("/recommendations")
+async def get_recommendations(current_user: User = Depends(get_current_user)):
+    from repositories.repositories import AssessmentRepository
+    from services.recommendation_service import RecommendationService
+    from app.domain.models import CyberProfile, Skill
+    
+    assessment_repo = AssessmentRepository()
+    db_assess = assessment_repo.get_by_user_id(str(current_user.id))
+    if isinstance(db_assess, list):
+        db_assess = db_assess[-1] if db_assess else None
+        
+    if not db_assess:
+        raise HTTPException(status_code=404, detail="No assessment found")
+        
+    matched = db_assess.matched_skills or []
+    profile = CyberProfile(
+        skills=[Skill(name=s, category="", difficulty="beginner") for s in matched]
+    )
+    
+    svc = RecommendationService()
+    rec = svc.get_next_recommendation(profile, str(db_assess.career_goal))
+    
+    return {
+        "success": True,
+        "data": {
+            "next_skill": rec.next_skill,
+            "next_project": rec.next_project,
+            "reason": rec.reason,
+            "estimated_hours": rec.estimated_hours,
+            "difficulty": rec.difficulty
+        }
+    }
+
+
+@router.post("/progress/update")
+async def update_progress(request: dict, current_user: User = Depends(get_current_user)):
+    skill_name = request.get("skill_name")
+    project_title = request.get("project_title")
+    study_hours = request.get("study_hours", 0)
+    
+    from repositories.repositories import AssessmentRepository
+    from services.progress_service import ProgressService
+    from app.domain.models import CyberProfile, Skill
+    
+    assessment_repo = AssessmentRepository()
+    db_assess = assessment_repo.get_by_user_id(str(current_user.id))
+    if isinstance(db_assess, list):
+        db_assess = db_assess[-1] if db_assess else None
+        
+    if not db_assess:
+        raise HTTPException(status_code=404, detail="No assessment found")
+        
+    matched = db_assess.matched_skills or []
+    profile = CyberProfile(
+        skills=[Skill(name=s, category="", difficulty="beginner") for s in matched]
+    )
+    
+    svc = ProgressService()
+    result = {}
+    target = str(db_assess.career_goal)
+    
+    if skill_name:
+        result = svc.complete_skill(profile, skill_name, target)
+    elif project_title:
+        result = svc.complete_project(profile, project_title, target)
+    elif study_hours > 0:
+        result = svc.add_study_hours(profile, study_hours, target)
+        
+    return {
+        "success": True,
+        "data": result
+    }

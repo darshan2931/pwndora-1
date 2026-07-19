@@ -1,5 +1,5 @@
 from database.session import SessionLocal
-from models.sqlalchemy_models import User, Assessment, Roadmap, ChatHistory
+from models.sqlalchemy_models import User, Assessment, Roadmap, ChatHistory, ResumeReview
 
 
 class UserRepository:
@@ -75,6 +75,20 @@ class RoadmapRepository:
         finally:
             db.close()
 
+    def update_steps(self, roadmap_id: str, steps: list) -> Roadmap:
+        db = SessionLocal()
+        try:
+            roadmap = db.query(Roadmap).filter(Roadmap.id == roadmap_id).first()
+            if roadmap:
+                # SQLAlchemy JSON columns need explicit flag modification sometimes
+                # or just re-assigning the new dict/list copy
+                roadmap.steps = steps
+                db.commit()
+                db.refresh(roadmap)
+            return roadmap
+        finally:
+            db.close()
+
 
 class ChatHistoryRepository:
     def get_by_user_id(self, user_id: str, limit: int = 50):
@@ -117,5 +131,35 @@ class ChatHistoryRepository:
             db.commit()
             db.refresh(chat)
             return chat
+        finally:
+            db.close()
+
+
+class ResumeReviewRepository:
+    def get_by_user_id(self, user_id: str, limit: int = 20):
+        db = SessionLocal()
+        try:
+            return (
+                db.query(ResumeReview)
+                .filter(ResumeReview.user_id == user_id)
+                .order_by(ResumeReview.created_at.desc())
+                .limit(limit)
+                .all()
+            )
+        finally:
+            db.close()
+
+    def create(self, user_id: str, career_goal: str, feedback: str) -> ResumeReview:
+        db = SessionLocal()
+        try:
+            review = ResumeReview(
+                user_id=user_id,
+                career_goal=career_goal,
+                feedback=feedback,
+            )
+            db.add(review)
+            db.commit()
+            db.refresh(review)
+            return review
         finally:
             db.close()

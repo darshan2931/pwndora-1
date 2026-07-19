@@ -71,16 +71,21 @@ class User(Base):
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
 
-class Assessment(Base):
-    __tablename__ = "assessments"
-    __table_args__ = (Index("ix_assessments_user_id", "user_id"),)
+class CyberProfile(Base):
+    __tablename__ = "cyber_profiles"
+    __table_args__ = (Index("ix_cyber_profiles_user_id", "user_id"),)
 
     id = Column(PortableUUID(), primary_key=True, default=uuid.uuid4)
     user_id = Column(PortableUUID(), nullable=False)
     career_goal = Column(String(100), nullable=False)
     readiness_score = Column(Integer, default=0)
-    matched_skills = Column(PortableJSON(), default=list)
+    known_skills = Column(PortableJSON(), default=list)
     missing_skills = Column(PortableJSON(), default=list)
+    completed_skills = Column(PortableJSON(), default=list)
+    projects = Column(PortableJSON(), default=list)
+    certifications = Column(PortableJSON(), default=list)
+    achievements = Column(PortableJSON(), default=list)
+    learning_preference = Column(String(50), default="hands-on")
     weekly_hours = Column(Integer, default=10)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
@@ -89,23 +94,104 @@ class Roadmap(Base):
     __tablename__ = "roadmaps"
 
     id = Column(PortableUUID(), primary_key=True, default=uuid.uuid4)
-    assessment_id = Column(PortableUUID(), unique=True, nullable=False)
+    profile_id = Column(PortableUUID(), unique=True, nullable=False)
     steps = Column(PortableJSON(), default=list)
     total_hours = Column(Integer, default=0)
     estimated_weeks = Column(Integer, default=0)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
-class ChatHistory(Base):
-    __tablename__ = "chat_history"
+class ChatMemory(Base):
+    __tablename__ = "chat_memory"
 
     id = Column(PortableUUID(), primary_key=True, default=uuid.uuid4)
     user_id = Column(PortableUUID(), nullable=False, index=True)
-    assessment_id = Column(PortableUUID(), nullable=False)
     session_id = Column(String(100), nullable=False, index=True)
-    question = Column(Text, nullable=False)
-    answer = Column(Text, nullable=False)
+    summary = Column(Text, nullable=False)
+    important_facts = Column(PortableJSON(), default=list)
+    next_goal = Column(String(255))
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class ResumeAnalysis(Base):
+    __tablename__ = "resume_analysis"
+
+    id = Column(PortableUUID(), primary_key=True, default=uuid.uuid4)
+    user_id = Column(PortableUUID(), nullable=False, index=True)
+    file_path = Column(String(255), nullable=False)
+    career_goal = Column(String(100), nullable=False)
+    extracted_data = Column(PortableJSON(), default=dict)
+    feedback = Column(Text, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class Skill(Base):
+    __tablename__ = "skills"
+    
+    id = Column(PortableUUID(), primary_key=True, default=uuid.uuid4)
+    user_id = Column(PortableUUID(), nullable=False, index=True)
+    name = Column(String(100), nullable=False)
+    status = Column(String(50), default="learning") # learning, completed
+    completed_at = Column(DateTime(timezone=True))
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class Project(Base):
+    __tablename__ = "projects"
+    
+    id = Column(PortableUUID(), primary_key=True, default=uuid.uuid4)
+    user_id = Column(PortableUUID(), nullable=False, index=True)
+    title = Column(String(255), nullable=False)
+    status = Column(String(50), default="in-progress")
+    github_link = Column(String(255))
+    completed_at = Column(DateTime(timezone=True))
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class Mission(Base):
+    __tablename__ = "missions"
+    
+    id = Column(PortableUUID(), primary_key=True, default=uuid.uuid4)
+    user_id = Column(PortableUUID(), nullable=False, index=True)
+    title = Column(String(255), nullable=False)
+    description = Column(Text)
+    status = Column(String(50), default="pending")
+    reward_points = Column(Integer, default=50)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class Progress(Base):
+    __tablename__ = "progress"
+    
+    id = Column(PortableUUID(), primary_key=True, default=uuid.uuid4)
+    user_id = Column(PortableUUID(), nullable=False, index=True)
+    study_hours = Column(Integer, default=0)
+    quizzes_taken = Column(Integer, default=0)
+    streak_days = Column(Integer, default=0)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class WeeklyReport(Base):
+    __tablename__ = "weekly_reports"
+    
+    id = Column(PortableUUID(), primary_key=True, default=uuid.uuid4)
+    user_id = Column(PortableUUID(), nullable=False, index=True)
+    week_start = Column(DateTime(timezone=True), nullable=False)
+    summary = Column(Text, nullable=False)
+    achievements = Column(PortableJSON(), default=list)
+    next_focus = Column(String(255))
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class Achievement(Base):
+    __tablename__ = "achievements"
+    
+    id = Column(PortableUUID(), primary_key=True, default=uuid.uuid4)
+    user_id = Column(PortableUUID(), nullable=False, index=True)
+    title = Column(String(100), nullable=False)
+    description = Column(Text)
+    icon = Column(String(50))
+    earned_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
 class KnowledgeCache(Base):
