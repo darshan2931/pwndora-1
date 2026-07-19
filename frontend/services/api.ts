@@ -12,6 +12,14 @@ const API_PREFIX = '/api/v1';
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const headers = { ...options?.headers } as Record<string, string>;
+  
+  // Inject JWT Token if available
+  if (typeof window !== 'undefined') {
+    const token = localStorage.getItem('auth_token');
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+  }
   const url = API_ORIGIN ? `${API_ORIGIN}${API_PREFIX}${path}` : `${API_PREFIX}${path}`;
   const res = await fetch(url, { ...options, headers });
   if (!res.ok) {
@@ -102,4 +110,30 @@ export async function getSkillResources(skillName: string): Promise<{ success: b
 
 export async function getLearningPath(career: string): Promise<{ success: boolean; data: { career: string; sequence: string[]; projects: string[]; certifications: string[]; estimated_duration: number } }> {
   return request(`/learning-paths/${encodeURIComponent(career)}`);
+}
+
+// AUTH API
+
+export async function login(data: Record<string, string>): Promise<{ access_token: string; token_type: string }> {
+  const formBody = Object.keys(data)
+    .map((key) => encodeURIComponent(key) + '=' + encodeURIComponent(data[key]))
+    .join('&');
+    
+  return request<{ access_token: string; token_type: string }>('/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: formBody,
+  });
+}
+
+export async function register(data: Record<string, string>): Promise<{ success: boolean; data: { id: string; email: string; name: string } }> {
+  return request('/auth/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data),
+  });
+}
+
+export async function getCurrentUser(): Promise<{ success: boolean; data: { id: string; email: string; name: string } }> {
+  return request('/auth/me');
 }

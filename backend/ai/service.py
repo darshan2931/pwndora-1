@@ -5,12 +5,14 @@ import re
 import time
 from collections import OrderedDict
 from pathlib import Path
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 import httpx
 
 from app.domain.models import Assessment, Roadmap
-from ai.demo_data import get_demo_response
+
+if TYPE_CHECKING:
+    from ai.gemini_client import GeminiClient
 
 logger = logging.getLogger(__name__)
 
@@ -313,8 +315,9 @@ class AIService:
     MAX_SESSIONS = 100
     SESSION_TTL = 3600  # 1 hour
 
-    def __init__(self, client: AIClient):
-        self.client = client
+    def __init__(self, mistral_client: Optional[AIClient] = None, gemini_client: Optional["GeminiClient"] = None):
+        self.mistral_client = mistral_client
+        self.gemini_client = gemini_client
         self.prompt_builder = PromptBuilder()
         self.validator = ResponseValidator()
         self._conversation_history: dict[str, tuple[list[dict], float]] = {}
@@ -349,25 +352,25 @@ class AIService:
             oldest = min(self._conversation_history, key=lambda k: self._conversation_history[k][1])
             del self._conversation_history[oldest]
 
+
+
     async def extract_skills_from_resume(self, resume_text: str) -> dict:
         ck = _cache_key("resume", resume_text[:200])
         cached = self._get_cache(ck)
         if cached:
             return json.loads(cached)
 
-        try:
-            system, prompt = self.prompt_builder.build_resume_extraction(resume_text)
-            response = await self.client.chat(prompt, system)
-            data = self.validator.validate_json(response)
-            if data is None:
-                logger.warning("AI returned invalid JSON, using demo data")
-                return get_demo_response("resume")
-            result = self.validator.extract_skills_from_json(data)
-            self._set_cache(ck, json.dumps(result))
-            return result
-        except RuntimeError as e:
-            logger.warning("AI unavailable, using demo data: %s", e)
-            return get_demo_response("resume")
+        if not self.mistral_client:
+            raise RuntimeError("Mistral API not configured. Set MISTRAL_API_KEY.")
+
+        system, prompt = self.prompt_builder.build_resume_extraction(resume_text)
+        response = await self.mistral_client.chat(prompt, system)
+        data = self.validator.validate_json(response)
+        if data is None:
+            raise RuntimeError("AI returned invalid JSON for resume extraction")
+        result = self.validator.extract_skills_from_json(data)
+        self._set_cache(ck, json.dumps(result))
+        return result
 
     async def explain_roadmap(self, assessment: Assessment, roadmap: Roadmap) -> tuple[str, float]:
         ck = _cache_key("roadmap", str(assessment.readiness_score), str(roadmap.estimated_weeks))
@@ -376,17 +379,15 @@ class AIService:
             data = json.loads(cached)
             return data["text"], data["confidence"]
 
-        try:
-            system, prompt = self.prompt_builder.build_roadmap_explanation(assessment, roadmap)
-            text = await self.client.chat(prompt, system)
-            known = [s.name for s in assessment.matched_skills + assessment.missing_skills]
-            confidence = self.validator.compute_confidence(text, known)
-            self._set_cache(ck, json.dumps({"text": text, "confidence": confidence}))
-            return text, confidence
-        except RuntimeError as e:
-            logger.warning("AI unavailable, using demo data: %s", e)
-            text = get_demo_response("roadmap")
-            return text, 0.5
+        if not self.mistral_client:
+            raise RuntimeError("Mistral API not configured. Set MISTRAL_API_KEY.")
+
+        system, prompt = self.prompt_builder.build_roadmap_explanation(assessment, roadmap)
+        text = await self.mistral_client.chat(prompt, system)
+        known = [s.name for s in assessment.matched_skills + assessment.missing_skills]
+        confidence = self.validator.compute_confidence(text, known)
+        self._set_cache(ck, json.dumps({"text": text, "confidence": confidence}))
+        return text, confidence
 
     async def explain_career(self, assessment: Assessment) -> tuple[str, float]:
         ck = _cache_key("career", str(assessment.readiness_score), assessment.target_career.title)
@@ -395,21 +396,25 @@ class AIService:
             data = json.loads(cached)
             return data["text"], data["confidence"]
 
-        try:
-            system, prompt = self.prompt_builder.build_career_explanation(assessment)
-            text = await self.client.chat(prompt, system)
-            known = [s.name for s in assessment.matched_skills + assessment.missing_skills]
-            confidence = self.validator.compute_confidence(text, known)
-            self._set_cache(ck, json.dumps({"text": text, "confidence": confidence}))
-            return text, confidence
-        except RuntimeError as e:
-            logger.warning("AI unavailable, using demo data: %s", e)
-            text = get_demo_response("career")
-            return text, 0.5
+        if not self.mistral_client:
+            raise RuntimeError("Mistral API not configured. Set MISTRAL_API_KEY.")
 
-    async def mentor_chat(self, assessment, question: str, session_id: str = "default", knowledge_context: str = "") -> str:
+        system, prompt = self.prompt_builder.build_career_explanation(assessment)
+        text = await self.mistral_client.chat(prompt, system)
+        known = [s.name for s in assessment.matched_skills + assessment.missing_skills]
+        confidence = self.validator.compute_confidence(text, known)
+        self._set_cache(ck, json.dumps({"text": text, "confidence": confidence}))
+        return text, confidence
+
+    async def mentor_chat(self, assessment, question: str, session_id: str = "default", knowledge_context: str = "", history: list[dict] = None) -> str:
+        if not self.gemini_client:
+            raise RuntimeError("Gemini API not configured. Set GEMINI_API_KEY.")
+
         system = _load_prompt("mentor")
-        history = self._get_session(session_id)
+        
+        if history is None:
+            history = []
+        
         history.append({"role": "user", "content": question})
 
         if assessment is not None:
@@ -427,20 +432,16 @@ class AIService:
         context_prompt += f"\nQuestion: {question}"
 
         full_history = [{"role": "user", "content": context_prompt}] if len(history) <= 1 else history
-        response = await self.client.chat_with_history(full_history, system)
-        history.append({"role": "assistant", "content": response})
-        if len(history) > 20:
-            history = history[-20:]
-        self._save_session(session_id, history)
+
+        response = await self.gemini_client.chat_with_history(full_history, system)
         return response
 
     async def review_resume(self, resume_text: str, career_goal: str) -> str:
-        try:
-            system, prompt = self.prompt_builder.build_resume_review(resume_text, career_goal)
-            return await self.client.chat(prompt, system)
-        except RuntimeError as e:
-            logger.warning("AI unavailable, using demo data: %s", e)
-            return "AI service is currently unavailable. Please try again later."
+        if not self.mistral_client:
+            raise RuntimeError("Mistral API not configured. Set MISTRAL_API_KEY.")
+
+        system, prompt = self.prompt_builder.build_resume_review(resume_text, career_goal)
+        return await self.mistral_client.chat(prompt, system)
 
     def clear_session(self, session_id: str):
         self._conversation_history.pop(session_id, None)

@@ -3,13 +3,20 @@ import shutil
 import logging
 from typing import Dict
 
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile, Depends
 from sqlalchemy.exc import OperationalError
+from sqlalchemy.orm import Session
+from sqlalchemy import select
 
 from utils.validators import sanitize_string, sanitize_filename, validate_skills_list, validate_career_goal, validate_study_hours
+from app.api.deps import get_current_user
+from models.sqlalchemy_models import User, ChatHistory
+from database.session import get_db
+from app.api.auth import router as auth_router
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+router.include_router(auth_router)
 
 _cache: Dict[str, dict] = {}
 CACHE_TTL = 300
@@ -138,7 +145,7 @@ async def analyze_career(
 
 
 @router.post("/career/save")
-async def save_assessment(request: dict):
+async def save_assessment(request: dict, current_user: User = Depends(get_current_user)):
     career_goal = sanitize_string(request.get("career_goal", ""), max_length=100)
     matched_skills = request.get("matched_skills", [])
     missing_skills = request.get("missing_skills", [])
@@ -156,7 +163,7 @@ async def save_assessment(request: dict):
         roadmap_repo = RoadmapRepository()
 
         assessment = assessment_repo.create(
-            user_id="00000000-0000-0000-0000-000000000001",
+            user_id=str(current_user.id),
             career_goal=career_goal,
             readiness_score=readiness_score,
             matched_skills=matched_skills,
@@ -188,7 +195,7 @@ async def save_assessment(request: dict):
 
 
 @router.get("/assessments/{assessment_id}")
-async def get_assessment(assessment_id: str):
+async def get_assessment(assessment_id: str, current_user: User = Depends(get_current_user)):
     assessment_id = sanitize_string(assessment_id, max_length=100)
     if not assessment_id:
         raise HTTPException(status_code=400, detail="Invalid assessment ID")
@@ -202,6 +209,9 @@ async def get_assessment(assessment_id: str):
         db_assess = assessment_repo.get_by_id(assessment_id)
         if not db_assess:
             raise HTTPException(status_code=404, detail="Assessment not found")
+            
+        if str(db_assess.user_id) != str(current_user.id):
+            raise HTTPException(status_code=403, detail="Not authorized to view this assessment")
 
         role_data = knowledge_loader.get_role(str(db_assess.career_goal)) or {}
 
@@ -258,10 +268,18 @@ async def explain_career(request: dict):
     except RuntimeError:
         pass
 
+    text = ""
+    confidence = 0.5
     if ai_svc:
-        text, confidence = await ai_svc.explain_career(assessment)
+        try:
+            text, confidence = await ai_svc.explain_career(assessment)
+        except RuntimeError as e:
+            logger.warning("Career explanation AI failed, using fallback: %s", e)
+            from ai.demo_data import get_demo_response  # pyrefly: ignore [missing-import]
+            text = get_demo_response("career")
+            confidence = 0.5
     else:
-        from ai.demo_data import get_demo_response
+        from ai.demo_data import get_demo_response  # pyrefly: ignore [missing-import]
         text = get_demo_response("career")
         confidence = 0.5
 
@@ -269,7 +287,11 @@ async def explain_career(request: dict):
 
 
 @router.post("/mentor/chat")
-async def mentor_chat(request: dict):
+async def mentor_chat(
+    request: dict,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
     question = sanitize_string(request.get("question", ""), max_length=500)
     assessment_id = sanitize_string(request.get("assessment_id", ""), max_length=100)
     session_id = sanitize_string(request.get("session_id", ""), max_length=100) or "default"
@@ -360,24 +382,43 @@ async def mentor_chat(request: dict):
             f"- The user has not completed an assessment yet.\n"
         )
 
+    db_histories = db.scalars(
+        select(ChatHistory)
+        .filter_by(user_id=str(current_user.id), session_id=session_id)
+        .order_by(ChatHistory.created_at.asc())
+    ).all()
+    
+    history = []
+    for h in db_histories:
+        history.append({"role": "user", "content": h.question})
+        history.append({"role": "assistant", "content": h.answer})
+
+    response = ""
     if ai_svc:
         try:
             response = await ai_svc.mentor_chat(
                 assessment, question,
                 session_id=session_id,
                 knowledge_context=knowledge_context,
+                history=history,
             )
         except RuntimeError as e:
-            logger.error("Mentor chat AI failed: %s", e)
-            raise HTTPException(
-                status_code=503,
-                detail="AI service is temporarily unavailable. Please try again later.",
-            )
+            logger.warning("Mentor chat AI failed, using fallback: %s", e)
+            from ai.demo_data import get_demo_response  # pyrefly: ignore [missing-import]
+            response = get_demo_response("mentor", question=question)
     else:
-        raise HTTPException(
-            status_code=503,
-            detail="AI service is not configured. Please set GEMINI_API_KEY or MISTRAL_API_KEY.",
-        )
+        from ai.demo_data import get_demo_response  # pyrefly: ignore [missing-import]
+        response = get_demo_response("mentor", question=question)
+
+    new_chat = ChatHistory(
+        user_id=str(current_user.id),
+        assessment_id=assessment_id if assessment_id else "00000000-0000-0000-0000-000000000000",
+        session_id=session_id,
+        question=question,
+        answer=response
+    )
+    db.add(new_chat)
+    db.commit()
 
     return {"success": True, "response": response}
 

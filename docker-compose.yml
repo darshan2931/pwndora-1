@@ -25,6 +25,8 @@ services:
       - DATABASE_URL=postgresql://user:pass@db:5432/cyberpath
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - MISTRAL_API_KEY=${MISTRAL_API_KEY:-}
+      - MISTRAL_API_KEYS=${MISTRAL_API_KEYS:-}
+      - SECRET_KEY=${SECRET_KEY}
     volumes:
       - ./knowledge:/knowledge:ro
     depends_on:

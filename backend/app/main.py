@@ -10,6 +10,8 @@ from fastapi.middleware.cors import CORSMiddleware
 # pyrefly: ignore [missing-import]
 from ai.service import AIClient, AIService
 # pyrefly: ignore [missing-import]
+from ai.gemini_client import GeminiClient
+# pyrefly: ignore [missing-import]
 from core.middleware import AccessLogMiddleware
 # pyrefly: ignore [missing-import]
 from utils.middleware.rate_limiter import RateLimitMiddleware
@@ -28,7 +30,7 @@ _ai_service: Optional[AIService] = None
 
 def get_ai_service() -> AIService:
     if _ai_service is None:
-        raise RuntimeError("AI service not initialized. Check MISTRAL_API_KEY.")
+        raise RuntimeError("AI service not initialized. Check API keys.")
     return _ai_service
 
 
@@ -41,25 +43,30 @@ async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
     logger.info("Database tables verified/created.")
 
-    gemini_key = os.getenv("GEMINI_API_KEY", "")
-    if gemini_key:
-        api_keys = [k.strip() for k in gemini_key.split(",") if k.strip()]
-        from ai.gemini_client import GeminiClient
-        client = GeminiClient(api_keys=api_keys)
-        _ai_service = AIService(client=client)
-        logger.info("AI service initialized with Gemini API (%d key(s))", len(api_keys))
+    # Initialize Mistral client for assessment/career (resume, roadmap, career explanation)
+    mistral_client = None
+    mistral_keys_str = os.getenv("MISTRAL_API_KEYS", "") or os.getenv("MISTRAL_API_KEY", "")
+    mistral_keys = [k.strip() for k in mistral_keys_str.split(",") if k.strip()]
+    if mistral_keys:
+        mistral_client = AIClient(api_keys=mistral_keys)
+        logger.info("Mistral client initialized (%d key(s))", len(mistral_keys))
     else:
-        keys_str = os.getenv("MISTRAL_API_KEYS", "")
-        if not keys_str:
-            keys_str = os.getenv("MISTRAL_API_KEY", "")
+        logger.warning("No MISTRAL_API_KEY found. Assessment features will be limited.")
 
-        api_keys = [k.strip() for k in keys_str.split(",") if k.strip()]
-        if api_keys:
-            client = AIClient(api_keys=api_keys)
-            _ai_service = AIService(client=client)
-            logger.info("AI service initialized with Mistral API (%d key(s))", len(api_keys))
-        else:
-            logger.warning("No AI API keys found. AI features will use demo data.")
+    # Initialize Gemini client for AI mentor chat
+    gemini_client = None
+    gemini_keys_str = os.getenv("GEMINI_API_KEY", "")
+    gemini_keys = [k.strip() for k in gemini_keys_str.split(",") if k.strip()]
+    if gemini_keys:
+        gemini_client = GeminiClient(api_keys=gemini_keys)
+        logger.info("Gemini client initialized (%d key(s))", len(gemini_keys))
+    else:
+        logger.warning("No GEMINI_API_KEY found. AI mentor will be unavailable.")
+
+    if mistral_client or gemini_client:
+        _ai_service = AIService(mistral_client=mistral_client, gemini_client=gemini_client)
+    else:
+        logger.warning("No AI API keys found. AI features will be unavailable.")
     yield
     _ai_service = None
 

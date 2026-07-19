@@ -6,8 +6,10 @@ import Badge from '@/components/ui/Badge';
 import { Card } from '@/components/ui/Card';
 import { MENTOR_SUGGESTED_QUESTIONS } from '@/constants';
 import { MentorMessage } from '@/types';
-import { mentorChat, clearMentorSession, getAssessment } from '@/services/api';
 import { useToast } from '@/components/ui';
+import { useAuth } from '@/components/AuthContext';
+import { mentorChat, clearMentorSession, getAssessment } from '@/services/api';
+import Link from 'next/link';
 
 const TOPIC_CATEGORIES = [
   { label: 'Career Advice', icon: '🎯', questions: ['How do I break into cybersecurity?', 'What cybersecurity role suits me best?', 'How do I transition from IT to security?'] },
@@ -149,6 +151,7 @@ export default function MentorPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const sessionIdRef = useRef(`session-${Date.now()}`);
+  const { user, loading: authLoading } = useAuth();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -164,7 +167,7 @@ export default function MentorPage() {
     if (storedId) setAssessmentId(storedId);
   }, []);
 
-  const parseSuggestions = useCallback((response: string): string[] => {
+  const parseSuggestions = useCallback((response: string): void => {
     const match = response.match(/\[SUGGESTIONS\]\s*([\s\S]*?)\s*\[\/SUGGESTIONS\]/);
     if (match) {
       const suggestions = match[1]
@@ -230,6 +233,48 @@ export default function MentorPage() {
     if (!ts) return '';
     return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
+
+  if (authLoading) {
+    return (
+      <div className="max-w-3xl mx-auto h-[calc(100vh-8rem)] flex items-center justify-center">
+        <div className="flex gap-1">
+          <span className="w-3 h-3 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+          <span className="w-3 h-3 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+          <span className="w-3 h-3 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="max-w-3xl mx-auto h-[calc(100vh-8rem)] flex flex-col items-center justify-center fade-in text-center px-4">
+        <div className="w-16 h-16 bg-gradient-to-br from-primary/20 to-accent/20 rounded-2xl flex items-center justify-center mb-6">
+          <svg className="w-8 h-8 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+          </svg>
+        </div>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Authentication Required</h1>
+        <p className="text-gray-600 dark:text-gray-400 max-w-md mb-8">
+          You need to be signed in to use the AI Career Mentor. This allows the mentor to remember your conversations and personalize advice.
+        </p>
+        <div className="flex gap-4">
+          <Link
+            href="/login"
+            className="px-6 py-3 rounded-xl bg-primary text-white font-semibold hover:bg-primary/90 transition-all shadow-lg shadow-primary/25"
+          >
+            Sign In
+          </Link>
+          <Link
+            href="/register"
+            className="px-6 py-3 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white font-semibold hover:bg-gray-200 dark:hover:bg-gray-700 transition-all border border-gray-200 dark:border-gray-700"
+          >
+            Create Account
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-3xl mx-auto h-[calc(100vh-8rem)] flex flex-col fade-in">

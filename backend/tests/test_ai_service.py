@@ -223,47 +223,68 @@ class TestAIClient:
 
 class TestAIService:
     @pytest.mark.asyncio
-    async def test_extract_skills_fallback(self):
-        client = AIClient(api_keys=["test-key"])
-        service = AIService(client)
+    async def test_extract_skills_raises_without_mistral(self):
+        service = AIService(mistral_client=None, gemini_client=None)
 
-        with patch.object(client, "chat", side_effect=RuntimeError("API down")):
-            result = await service.extract_skills_from_resume("some resume")
-            assert "skills" in result
-            assert isinstance(result["skills"], list)
+        with pytest.raises(RuntimeError, match="Mistral API not configured"):
+            await service.extract_skills_from_resume("some resume")
 
     @pytest.mark.asyncio
-    async def test_explain_roadmap_fallback(self, sample_assessment, sample_roadmap):
+    async def test_extract_skills_success(self):
         client = AIClient(api_keys=["test-key"])
-        service = AIService(client)
+        service = AIService(mistral_client=client)
 
-        with patch.object(client, "chat", side_effect=RuntimeError("API down")):
+        mock_response = '{"skills": ["Linux", "Python"], "projects": [], "certifications": []}'
+        with patch.object(client, "chat", return_value=mock_response):
+            result = await service.extract_skills_from_resume("some resume")
+            assert "skills" in result
+            assert "Linux" in result["skills"]
+
+    @pytest.mark.asyncio
+    async def test_explain_roadmap_raises_without_mistral(self, sample_assessment, sample_roadmap):
+        service = AIService(mistral_client=None, gemini_client=None)
+
+        with pytest.raises(RuntimeError, match="Mistral API not configured"):
+            await service.explain_roadmap(sample_assessment, sample_roadmap)
+
+    @pytest.mark.asyncio
+    async def test_explain_roadmap_success(self, sample_assessment, sample_roadmap):
+        client = AIClient(api_keys=["test-key"])
+        service = AIService(mistral_client=client)
+
+        with patch.object(client, "chat", return_value="This is a roadmap explanation based on your profile."):
             text, confidence = await service.explain_roadmap(sample_assessment, sample_roadmap)
             assert isinstance(text, str)
             assert 0 <= confidence <= 1
 
     @pytest.mark.asyncio
-    async def test_mentor_chat_raises_on_api_failure(self, sample_assessment):
-        client = AIClient(api_keys=["test-key"])
-        service = AIService(client)
+    async def test_mentor_chat_raises_without_gemini(self, sample_assessment):
+        service = AIService(mistral_client=None, gemini_client=None)
 
-        with patch.object(client, "chat_with_history", side_effect=RuntimeError("API down")):
-            with pytest.raises(RuntimeError, match="API down"):
-                await service.mentor_chat(sample_assessment, "What should I learn?")
+        with pytest.raises(RuntimeError, match="Gemini API not configured"):
+            await service.mentor_chat(sample_assessment, "What should I learn?")
+
+    @pytest.mark.asyncio
+    async def test_mentor_chat_raises_on_api_failure(self, sample_assessment):
+        gemini_client = MagicMock()
+        gemini_client.chat_with_history = AsyncMock(side_effect=RuntimeError("API down"))
+        service = AIService(mistral_client=None, gemini_client=gemini_client)
+
+        with pytest.raises(RuntimeError, match="API down"):
+            await service.mentor_chat(sample_assessment, "What should I learn?")
 
     @pytest.mark.asyncio
     async def test_mentor_chat_with_session(self, sample_assessment):
-        client = AIClient(api_keys=["test-key"])
-        service = AIService(client)
+        gemini_client = MagicMock()
+        gemini_client.chat_with_history = AsyncMock(return_value="Great question!")
+        service = AIService(mistral_client=None, gemini_client=gemini_client)
 
-        with patch.object(client, "chat_with_history", return_value="Great question!"):
-            await service.mentor_chat(sample_assessment, "Question 1", session_id="test-session")
-            await service.mentor_chat(sample_assessment, "Question 2", session_id="test-session")
-            assert len(service._conversation_history["test-session"][0]) == 4
+        await service.mentor_chat(sample_assessment, "Question 1", session_id="test-session")
+        await service.mentor_chat(sample_assessment, "Question 2", session_id="test-session")
+        assert len(service._conversation_history["test-session"][0]) == 4
 
     def test_clear_session(self):
-        client = AIClient(api_keys=["test-key"])
-        service = AIService(client)
+        service = AIService(mistral_client=None, gemini_client=None)
         service._conversation_history["test"] = [{"role": "user", "content": "hi"}]
         service.clear_session("test")
         assert "test" not in service._conversation_history

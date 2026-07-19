@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTheme } from '@/components/ThemeProvider';
+import { useAuth } from '@/components/AuthContext';
 
 const navLinks = [
   { href: '/explore', label: 'Explore Careers' },
@@ -17,6 +18,7 @@ export default function Navbar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
   const { theme, toggle } = useTheme();
+  const { user, logout } = useAuth();
 
   return (
     <nav className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40" role="navigation" aria-label="Main navigation">
@@ -44,6 +46,37 @@ export default function Navbar() {
                 {link.label}
               </Link>
             ))}
+          </div>
+
+          <div className="hidden md:flex items-center gap-4 ml-4">
+            {user ? (
+              <div className="flex items-center gap-4">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {user.name}
+                </span>
+                <button
+                  onClick={logout}
+                  className="px-3 py-1.5 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all"
+                >
+                  Logout
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Link
+                  href="/login"
+                  className="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all"
+                >
+                  Sign in
+                </Link>
+                <Link
+                  href="/register"
+                  className="px-4 py-2 rounded-lg text-sm font-medium bg-primary text-white hover:bg-primary/90 transition-all shadow-sm shadow-primary/20"
+                >
+                  Sign up
+                </Link>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
@@ -101,6 +134,39 @@ export default function Navbar() {
                 {link.label}
               </Link>
             ))}
+            
+            <div className="pt-4 mt-4 border-t border-gray-200 dark:border-gray-700">
+              {user ? (
+                <>
+                  <div className="px-3 py-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Signed in as {user.name}
+                  </div>
+                  <button
+                    onClick={() => { logout(); setMobileOpen(false); }}
+                    className="w-full text-left px-3 py-2 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <div className="space-y-2">
+                  <Link
+                    href="/login"
+                    onClick={() => setMobileOpen(false)}
+                    className="block px-3 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  >
+                    Sign in
+                  </Link>
+                  <Link
+                    href="/register"
+                    onClick={() => setMobileOpen(false)}
+                    className="block px-3 py-2 rounded-lg text-sm font-medium bg-primary text-white hover:bg-primary/90"
+                  >
+                    Sign up
+                  </Link>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
