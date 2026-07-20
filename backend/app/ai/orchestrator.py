@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 class AIOrchestrator:
     """Coordinates context, prompts, validation, and AI provider calls."""
     
-    def __init__(self, provider_name: str = "mistral", fallback_provider_name: str = "gemini"):
+    def __init__(self, provider_name: str = "gemini", fallback_provider_name: str = "mistral"):
         self.provider: Optional[BaseAIProvider] = AIProviderFactory.get_provider(provider_name)
         self.fallback_provider: Optional[BaseAIProvider] = AIProviderFactory.get_provider(fallback_provider_name)
 

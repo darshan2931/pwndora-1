@@ -76,9 +76,15 @@ class KnowledgeLoader:
     def get_learning_paths(self) -> list:
         return self._load("learning_paths.json")
 
+    ROLE_ALIASES = {
+        "dfir specialist": "digital forensics analyst",
+        "appsec engineer": "application security engineer",
+    }
+
     def get_role(self, role_name: str) -> Optional[dict]:
+        canonical = self.ROLE_ALIASES.get(role_name.lower(), role_name)
         for role in self.get_roles():
-            if role.get("role", "").lower() == role_name.lower():
+            if role.get("role", "").lower() == canonical.lower():
                 return role
         return None
 

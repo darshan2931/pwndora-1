@@ -5,7 +5,7 @@ from .response_validator import ResponseParser
 class AIService:
     """High-level AI service exposed to the rest of the application."""
     
-    def __init__(self, provider_name: str = "mistral"):
+    def __init__(self, provider_name: str = "gemini"):
         self.orchestrator = AIOrchestrator(provider_name)
 
     def is_configured(self) -> bool:

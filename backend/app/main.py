@@ -41,8 +41,8 @@ async def lifespan(app: FastAPI):
     logger.info("Database tables verified/created.")
 
     # Initialize new AI Intelligence Layer
-    # Defaults to 'mistral' provider, reads from MISTRAL_API_KEY or GEMINI_API_KEY inside the factory
-    _ai_service = AIService(provider_name="mistral")
+    # Defaults to 'gemini' provider, falls back to 'mistral'
+    _ai_service = AIService(provider_name="gemini")
     
     if _ai_service.is_configured():
         logger.info("AI Intelligence Layer initialized successfully.")
