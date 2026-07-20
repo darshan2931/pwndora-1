@@ -35,6 +35,32 @@ RESOURCE_URLS = {
     "Wireshark": {"url": "https://www.wireshark.org/docs/", "type": "article"},
 }
 
+CERT_URLS = {
+    "Google Cybersecurity Professional Certificate": "https://www.coursera.org/professional-certificates/google-cybersecurity",
+    "CompTIA Security+": "https://www.comptia.org/certifications/security",
+    "Blue Team Level 1": "https://securityblue.team/bugs/",
+    "eJPT": "https://ine.com/certifications/ine-security-certified-endpoint-professional",
+    "PNPT": "https://pntoacademy.com/pnpt",
+    "OSCP": "https://www.offensive-security.com/pwk-oscp/",
+    "AWS Security Specialty": "https://aws.amazon.com/certification/certified-security-specialty/",
+    "CCSK": "https://cloudsecurityalliance.org/research/ccsk/",
+    "Azure Security Engineer": "https://learn.microsoft.com/en-us/credentials/certifications/azure-security-engineer/",
+    "CSSLP": "https://www.isc2.org/credentials/csslp",
+    "GCFA": "https://www.giac.org/certifications/forensic-analyst-gcfa/",
+    "CTIA": "https://cert.eccouncil.org/programs/cyber-threat-intelligence-ctia/",
+    "GCTI": "https://www.giac.org/certifications/cyber-threat-intelligence-gcti/",
+    "CISSP": "https://www.isc2.org/credentials/cissp",
+    "CCSP": "https://www.isc2.org/credentials/ccsp",
+    "Certified Kubernetes Security Specialist": "https://training.linuxfoundation.org/certification/certified-kubernetes-security-specialist/",
+    "GCIH": "https://www.giac.org/certifications/incident-handler-gcih/",
+    "CISA": "https://www.isaca.org/credentials/cisa",
+    "CRISC": "https://www.isaca.org/credentials/crisc",
+    "ISO 27001 Lead Implementer": "https://pecb.com/en/education-and-certification-for-individuals/iso-27001-lead-implementer",
+    "CEH": "https://www.eccouncil.org/programs/certified-ethical-hacker-ceh/",
+    "CompTIA CySA+": "https://www.comptia.org/certifications/cybersecurity-analyst",
+    "OSWE": "https://www.offensive-security.com/awe-oswe/",
+}
+
 
 class CareerOrchestrator:
     def __init__(self, ai_service=None):
@@ -127,6 +153,60 @@ class CareerOrchestrator:
                 "prerequisites": step.prerequisites,
                 "resources": resources,
             })
+
+        certs = self.kb.get_certifications_for_role(career_goal)
+        if not certs:
+            canonical = self.kb.ROLE_ALIASES.get(career_goal.lower(), career_goal)
+            certs = self.kb.get_certifications_for_role(canonical)
+        if not certs:
+            canonical = self.kb.ROLE_ALIASES.get(career_goal.lower(), career_goal)
+            for c in self.kb.get_certifications():
+                rec_lower = [r.lower() for r in c.get("recommended_for", [])]
+                if career_goal.lower() in rec_lower or canonical.lower() in rec_lower:
+                    certs.append(c)
+        skill_names_in_roadmap = [s.skill.name.lower() for s in roadmap.steps]
+        cert_nodes = []
+        for cert in certs:
+            cert_prereqs = [p.lower() for p in cert.get("prerequisites", [])]
+            if cert_prereqs and not any(p in skill_names_in_roadmap for p in cert_prereqs):
+                continue
+            last_prereq_idx = len(roadmap.steps) - 1
+            if cert_prereqs:
+                for p in cert_prereqs:
+                    for idx, sn in enumerate(skill_names_in_roadmap):
+                        if p == sn:
+                            last_prereq_idx = max(last_prereq_idx, idx)
+            cert_url = CERT_URLS.get(cert["name"], "#")
+            cert_nodes.append({
+                "insert_after": last_prereq_idx,
+                "node": {
+                    "id": f"cert-{cert['name'].lower().replace(' ', '-')}",
+                    "title": cert["name"],
+                    "description": f"{cert['vendor']} certification for {career_goal}. Difficulty: {cert['difficulty']}.",
+                    "type": "certification",
+                    "status": "locked",
+                    "estimatedHours": 40,
+                    "difficulty": cert["difficulty"].capitalize() if cert["difficulty"] else "Beginner",
+                    "skills": [cert["name"]],
+                    "prerequisites": cert.get("prerequisites", []),
+                    "resources": [{
+                        "id": f"cert-res-{cert['name'].lower().replace(' ', '-')}",
+                        "title": cert["name"],
+                        "type": "course",
+                        "url": cert_url,
+                        "free": False,
+                    }],
+                },
+            })
+
+        cert_nodes.sort(key=lambda c: c["insert_after"])
+        for cn in cert_nodes:
+            insert_at = cn["insert_after"] + 1
+            cn["node"]["status"] = "locked"
+            roadmap_nodes.insert(insert_at, cn["node"])
+
+        for idx, node in enumerate(roadmap_nodes):
+            node["id"] = f"step-{idx}"
 
         return {
             "career_goal": career_goal,

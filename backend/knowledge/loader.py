@@ -101,9 +101,10 @@ class KnowledgeLoader:
         ]
 
     def get_certifications_for_role(self, role_name: str) -> List[dict]:
+        role_lower = role_name.lower()
         return [
             c for c in self.get_certifications()
-            if role_name in c.get("recommended_for", [])
+            if role_lower in [r.lower() for r in c.get("recommended_for", [])]
         ]
 
     def get_learning_path(self, career: str) -> Optional[dict]:
