@@ -277,7 +277,7 @@ async def get_mentor_greeting(current_user: User = Depends(get_current_user)):
     else:
         # get_by_user_id might return a list, take first or sort
         if isinstance(db_assess, list):
-            db_assess = db_assess[-1] if db_assess else None
+            db_assess = db_assess[0] if db_assess else None
             
     if not db_assess:
         return {"success": True, "greeting": "Welcome to Cyber Mentor! Please initialize your profile first by uploading your resume."}
@@ -319,7 +319,7 @@ async def mentor_chat(
     
     db_assess = assessment_repo.get_by_user_id(str(current_user.id))
     if isinstance(db_assess, list):
-        db_assess = db_assess[-1] if db_assess else None
+        db_assess = db_assess[0] if db_assess else None
         
     context_str = ""
     if db_assess:
@@ -553,7 +553,7 @@ async def get_dashboard(current_user: User = Depends(get_current_user)):
     # Get latest assessment
     db_assess = assessment_repo.get_by_user_id(str(current_user.id))
     if isinstance(db_assess, list):
-        db_assess = db_assess[-1] if db_assess else None
+        db_assess = db_assess[0] if db_assess else None
         
     if not db_assess:
         # User hasn't onboarded yet
@@ -674,7 +674,7 @@ async def get_career_readiness(current_user: User = Depends(get_current_user)):
     assessment_repo = AssessmentRepository()
     db_assess = assessment_repo.get_by_user_id(str(current_user.id))
     if isinstance(db_assess, list):
-        db_assess = db_assess[-1] if db_assess else None
+        db_assess = db_assess[0] if db_assess else None
         
     if not db_assess:
         raise HTTPException(status_code=404, detail="No assessment found")
@@ -708,7 +708,7 @@ async def get_recommendations(current_user: User = Depends(get_current_user)):
     assessment_repo = AssessmentRepository()
     db_assess = assessment_repo.get_by_user_id(str(current_user.id))
     if isinstance(db_assess, list):
-        db_assess = db_assess[-1] if db_assess else None
+        db_assess = db_assess[0] if db_assess else None
         
     if not db_assess:
         raise HTTPException(status_code=404, detail="No assessment found")
@@ -746,7 +746,7 @@ async def update_progress(request: dict, current_user: User = Depends(get_curren
     assessment_repo = AssessmentRepository()
     db_assess = assessment_repo.get_by_user_id(str(current_user.id))
     if isinstance(db_assess, list):
-        db_assess = db_assess[-1] if db_assess else None
+        db_assess = db_assess[0] if db_assess else None
         
     if not db_assess:
         raise HTTPException(status_code=404, detail="No assessment found")
