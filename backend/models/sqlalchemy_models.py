@@ -100,6 +100,7 @@ class Assessment(Base):
     matched_skills = Column(PortableJSON(), default=list)
     missing_skills = Column(PortableJSON(), default=list)
     weekly_hours = Column(Integer, default=10)
+    learning_preferences = Column(PortableJSON(), default=list)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 

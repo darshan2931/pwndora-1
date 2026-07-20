@@ -27,6 +27,7 @@ def _normalize_roadmap_steps(steps: list) -> list:
     total = len(steps)
     for i, step in enumerate(steps):
         if "title" in step and "status" in step and "type" in step:
+            step["completedAt"] = step.get("completedAt", step.get("completed_at"))
             normalized.append(step)
             continue
 
@@ -62,6 +63,7 @@ def _normalize_roadmap_steps(steps: list) -> list:
             "skills": step.get("skills", [skill_name]),
             "prerequisites": step.get("prerequisites", []),
             "resources": resources,
+            "completedAt": step.get("completedAt", step.get("completed_at")),
         })
     return normalized
 
@@ -213,6 +215,7 @@ async def save_assessment(request: dict, current_user: User = Depends(get_curren
     roadmap = request.get("roadmap", [])
     estimated_weeks = request.get("estimated_weeks", 0)
     study_hours = request.get("study_hours", 10)
+    learning_preferences = request.get("learning_preferences", [])
 
     if not career_goal:
         raise HTTPException(status_code=400, detail="career_goal is required")
@@ -229,13 +232,15 @@ async def save_assessment(request: dict, current_user: User = Depends(get_curren
             matched_skills=matched_skills,
             missing_skills=missing_skills,
             weekly_hours=study_hours,
+            learning_preferences=learning_preferences,
         )
 
         if roadmap:
+            total_hours = sum(s.get("estimatedHours", s.get("estimated_hours", 0)) for s in roadmap)
             roadmap_repo.create(
                 assessment_id=str(assessment.id),
                 steps=roadmap,
-                total_hours=sum(s.get("estimated_hours", 0) for s in roadmap),
+                total_hours=total_hours,
                 estimated_weeks=estimated_weeks,
             )
 
@@ -604,10 +609,10 @@ async def get_dashboard(current_user: User = Depends(get_current_user)):
         "avatarInitials": "".join([n[0] for n in current_user.name.split() if n])[:2].upper() or "U",
         "targetRole": db_assess.career_goal,
         "targetRoleCategory": "Cybersecurity",
-        "experience": "Beginner",
+        "experience": "Beginner" if (db_assess.readiness_score or 0) < 50 else ("Intermediate" if (db_assess.readiness_score or 0) < 80 else "Advanced"),
         "readiness": db_assess.readiness_score,
         "weeklyStudyHours": db_assess.weekly_hours or 10,
-        "learningPreferences": ["videos", "labs"],
+        "learningPreferences": db_assess.learning_preferences or ["videos", "labs"],
         "knownSkills": known,
         "missingSkills": missing,
         "completedSkills": [],

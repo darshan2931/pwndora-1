@@ -744,7 +744,7 @@ export default function OnboardingPage() {
         if (res.success && res.data) {
           update('detectedSkills', (res.data.matched_skills || []).map((s: string, i: number) => ({ id: String(i), name: s, confirmed: true })));
           update('missingSkills', res.data.missing_skills || []);
-          update('readinessScore', res.data.readiness_score || 0);
+          update('readinessScore', res.data.career_readiness || 0);
           update('roadmap', res.data.roadmap || []);
           update('estimatedWeeks', res.data.estimated_weeks || 0);
         }
@@ -810,14 +810,15 @@ export default function OnboardingPage() {
                 next();
                 try {
                    await api.saveAssessment({
-                     career_goal: state.targetRole || 'Penetration Tester',
-                     matched_skills: state.detectedSkills.filter(s => s.confirmed).map(s => s.name),
-                     missing_skills: state.missingSkills,
-                     readiness_score: state.readinessScore,
-                     roadmap: state.roadmap,
-                     estimated_weeks: state.estimatedWeeks,
-                     study_hours: { 'lt5': 4, '5-10': 8, '10-20': 15, '20+': 25 }[state.studyHours] || 10
-                   });
+                      career_goal: state.targetRole || 'Penetration Tester',
+                      matched_skills: state.detectedSkills.filter(s => s.confirmed).map(s => s.name),
+                      missing_skills: state.missingSkills,
+                      readiness_score: state.readinessScore,
+                      roadmap: state.roadmap,
+                      estimated_weeks: state.estimatedWeeks,
+                      study_hours: { 'lt5': 4, '5-10': 8, '10-20': 15, '20+': 25 }[state.studyHours] || 10,
+                      learning_preferences: state.learningPrefs || ['labs']
+                    });
                 } catch(e) {
                    console.error("Failed to save assessment", e);
                 }

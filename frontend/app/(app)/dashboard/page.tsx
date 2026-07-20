@@ -124,7 +124,12 @@ export default function DashboardPage() {
     estimatedMinutes: 15
   };
   const completed = roadmap?.filter((n: any) => n.status === 'completed').length || 0;
+  const inProgress = roadmap?.filter((n: any) => n.status === 'in-progress').length || 0;
   const total = roadmap?.length || 0;
+
+  const weeklyHoursStudied = (weeklyProgress || []).reduce((s: number, d: any) => s + (d.hours || 0), 0);
+  const weeklyGoal = profile.weeklyStudyHours || 10;
+  const weeklyPct = weeklyGoal ? Math.round((weeklyHoursStudied / weeklyGoal) * 100) : 0;
 
   const greeting = (() => {
     const h = new Date().getHours();
@@ -143,9 +148,9 @@ export default function DashboardPage() {
             {greeting}, {profile.email?.split('@')[0] || profile.name || 'User'}
           </h1>
           <div className="flex items-center gap-2 mt-1">
-            <span className="text-blue-400 font-medium">{profile.target_role || 'Penetration Tester'}</span>
+            <span className="text-blue-400 font-medium">{profile.targetRole || 'Penetration Tester'}</span>
             <span className="text-zinc-500">•</span>
-            <span className="text-emerald-400 font-medium">Lvl {profile.level || 1}</span>
+            <span className="text-emerald-400 font-medium">{profile.experience || 'Beginner'}</span>
           </div>
         </div>
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20">
@@ -191,7 +196,7 @@ export default function DashboardPage() {
             </div>
             <div className="flex items-center gap-1.5">
               <Star className="w-3.5 h-3.5" />
-              <span>{mission.node.resources.length} resources</span>
+              <span>{mission.node.resources?.length || 0} resources</span>
             </div>
           </div>
 
@@ -269,8 +274,8 @@ export default function DashboardPage() {
           <div className="mt-5 pt-5 border-t border-white/[0.06] grid grid-cols-3 gap-4">
             {[
               { label: 'Completed', value: completed, color: 'text-emerald-400' },
-              { label: 'In Progress', value: 1, color: 'text-blue-400' },
-              { label: 'Remaining', value: total - completed - 1, color: 'text-zinc-500' },
+              { label: 'In Progress', value: inProgress, color: 'text-blue-400' },
+              { label: 'Remaining', value: total - completed - inProgress, color: 'text-zinc-500' },
             ].map(s => (
               <div key={s.label} className="text-center">
                 <div className={`text-lg font-bold ${s.color}`}>{s.value}</div>
@@ -284,7 +289,7 @@ export default function DashboardPage() {
         <div className="surface p-5">
           <div className="flex items-center justify-between mb-5">
             <span className="text-label">This Week</span>
-            <span className="text-xs text-zinc-500">Goal: 10h</span>
+            <span className="text-xs text-zinc-500">Goal: {weeklyGoal}h</span>
           </div>
           <div className="flex items-end justify-between gap-1 h-24">
             {(weeklyProgress || []).map((d: any) => (
@@ -293,11 +298,11 @@ export default function DashboardPage() {
           </div>
           <div className="mt-4 pt-4 border-t border-white/[0.06] flex items-center justify-between">
             <div>
-              <div className="text-lg font-bold text-[#fafafa]">7.5h</div>
+              <div className="text-lg font-bold text-[#fafafa]">{weeklyHoursStudied}h</div>
               <div className="text-xs text-zinc-500">studied this week</div>
             </div>
             <div className="text-right">
-              <div className="text-sm font-semibold text-amber-400">75%</div>
+              <div className="text-sm font-semibold text-amber-400">{weeklyPct}%</div>
               <div className="text-xs text-zinc-500">of weekly goal</div>
             </div>
           </div>
@@ -318,7 +323,7 @@ export default function DashboardPage() {
               <span className="text-xl">{a.icon}</span>
               <div className="min-w-0">
                 <div className="text-xs font-semibold text-[#fafafa] truncate">{a.title}</div>
-                <div className="text-[10px] text-zinc-600 truncate">{a.type}</div>
+                <div className="text-[10px] text-zinc-600 truncate">{a.description}</div>
               </div>
             </div>
           ))}

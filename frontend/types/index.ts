@@ -34,8 +34,8 @@ export interface Achievement {
   title: string;
   description: string;
   icon: string;
-  earnedAt: string;
-  type: 'streak' | 'skill' | 'project' | 'milestone';
+  unlockedAt: string;
+  type?: 'streak' | 'skill' | 'project' | 'milestone';
 }
 
 // ─── Roadmap ──────────────────────────────────────────────────────────────────
