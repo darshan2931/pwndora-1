@@ -9,6 +9,32 @@ from services.recommendation_service import RecommendationService
 
 logger = logging.getLogger(__name__)
 
+RESOURCE_URLS = {
+    "Microsoft Learn": {"url": "https://learn.microsoft.com/en-us/windows/", "type": "course"},
+    "Splunk Free Training": {"url": "https://www.splunk.com/en_us/training/free-online-training.html", "type": "course"},
+    "Splunk Documentation": {"url": "https://docs.splunk.com/", "type": "article"},
+    "Wireshark Documentation": {"url": "https://www.wireshark.org/docs/", "type": "article"},
+    "Wireshark Wiki": {"url": "https://wiki.wireshark.org/", "type": "article"},
+    "Cisco Skills for All": {"url": "https://skillsforall.com/", "type": "course"},
+    "TryHackMe": {"url": "https://tryhackme.com/", "type": "lab"},
+    "Hack The Box": {"url": "https://www.hackthebox.com/", "type": "lab"},
+    "SANS DFIR": {"url": "https://www.sans.org/white-papers/incident-handling-process/", "type": "article"},
+    "Automate the Boring Stuff": {"url": "https://automatetheboringstuff.com/", "type": "book"},
+    "MITRE ATT&CK Website": {"url": "https://attack.mitre.org/", "type": "article"},
+    "The Linux Command Line": {"url": "https://linuxcommand.org/tlcl.php", "type": "book"},
+    "OverTheWire": {"url": "https://overthewire.org/wargames/bandit/", "type": "lab"},
+    "Nmap Documentation": {"url": "https://nmap.org/docs.html", "type": "article"},
+    "PortSwigger Web Security Academy": {"url": "https://portswigger.net/web-security", "type": "course"},
+    "PortSwigger": {"url": "https://portswigger.net/web-security", "type": "course"},
+    "DFIR Training": {"url": "https://www.dfir.training/", "type": "course"},
+    "Kubernetes Documentation": {"url": "https://kubernetes.io/docs/home/", "type": "article"},
+    "HashiCorp Learn": {"url": "https://developer.hashicorp.com/terraform/tutorials", "type": "course"},
+    "AWS Documentation": {"url": "https://docs.aws.amazon.com/iam/", "type": "article"},
+    "OWASP": {"url": "https://owasp.org/www-project-top-ten/", "type": "article"},
+    "Splunk": {"url": "https://www.splunk.com/en_us/training/free-online-training.html", "type": "course"},
+    "Wireshark": {"url": "https://www.wireshark.org/docs/", "type": "article"},
+}
+
 
 class CareerOrchestrator:
     def __init__(self, ai_service=None):
@@ -79,11 +105,12 @@ class CareerOrchestrator:
             resources = []
             for j, r in enumerate(step.resources):
                 if isinstance(r, str):
+                    meta = RESOURCE_URLS.get(r, {})
                     resources.append({
                         "id": f"res-{i}-{j}",
                         "title": r,
-                        "type": "article",
-                        "url": "#",
+                        "type": meta.get("type", "article"),
+                        "url": meta.get("url", "#"),
                         "free": True,
                     })
                 else:

@@ -20,6 +20,45 @@ router.include_router(auth_router)
 ALLOWED_EXTENSIONS = {".pdf", ".docx", ".txt", ".png", ".jpg", ".jpeg"}
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
 
+RESOURCE_ENRICHMENT = {
+    "Microsoft Learn": {"url": "https://learn.microsoft.com/en-us/windows/", "type": "course", "free": True},
+    "Splunk Free Training": {"url": "https://www.splunk.com/en_us/training/free-online-training.html", "type": "course", "free": True},
+    "Splunk Documentation": {"url": "https://docs.splunk.com/", "type": "article", "free": True},
+    "Wireshark Documentation": {"url": "https://www.wireshark.org/docs/", "type": "article", "free": True},
+    "Wireshark Wiki": {"url": "https://wiki.wireshark.org/", "type": "article", "free": True},
+    "Cisco Skills for All": {"url": "https://skillsforall.com/", "type": "course", "free": True},
+    "TryHackMe": {"url": "https://tryhackme.com/", "type": "lab", "free": True},
+    "Hack The Box": {"url": "https://www.hackthebox.com/", "type": "lab", "free": True},
+    "SANS DFIR": {"url": "https://www.sans.org/white-papers/incident-handling-process/", "type": "article", "free": True},
+    "Automate the Boring Stuff": {"url": "https://automatetheboringstuff.com/", "type": "book", "free": True},
+    "MITRE ATT&CK Website": {"url": "https://attack.mitre.org/", "type": "article", "free": True},
+    "The Linux Command Line": {"url": "https://linuxcommand.org/tlcl.php", "type": "book", "free": True},
+    "OverTheWire": {"url": "https://overthewire.org/wargames/bandit/", "type": "lab", "free": True},
+    "Nmap Documentation": {"url": "https://nmap.org/docs.html", "type": "article", "free": True},
+    "PortSwigger Web Security Academy": {"url": "https://portswigger.net/web-security", "type": "course", "free": True},
+    "PortSwigger": {"url": "https://portswigger.net/web-security", "type": "course", "free": True},
+    "DFIR Training": {"url": "https://www.dfir.training/", "type": "course", "free": True},
+    "Kubernetes Documentation": {"url": "https://kubernetes.io/docs/home/", "type": "article", "free": True},
+    "HashiCorp Learn": {"url": "https://developer.hashicorp.com/terraform/tutorials", "type": "course", "free": True},
+    "AWS Documentation": {"url": "https://docs.aws.amazon.com/iam/", "type": "article", "free": True},
+    "OWASP": {"url": "https://owasp.org/www-project-top-ten/", "type": "article", "free": True},
+    "Splunk": {"url": "https://www.splunk.com/en_us/training/free-online-training.html", "type": "course", "free": True},
+    "Wireshark": {"url": "https://www.wireshark.org/docs/", "type": "article", "free": True},
+}
+
+
+def _enrich_resource(r: dict, step_idx: int, res_idx: int) -> dict:
+    """Enrich a resource with proper URL, type, and free status from the enrichment map."""
+    title = r.get("title", "")
+    enriched = RESOURCE_ENRICHMENT.get(title, {})
+    return {
+        "id": r.get("id", f"res-{step_idx}-{res_idx}"),
+        "title": title,
+        "type": enriched.get("type", r.get("type", "article")),
+        "url": enriched.get("url", r.get("url", "#")),
+        "free": enriched.get("free", r.get("free", True)),
+    }
+
 
 def _normalize_roadmap_steps(steps: list) -> list:
     """Convert old-format roadmap steps to the RoadmapNode format expected by the frontend."""
@@ -28,6 +67,7 @@ def _normalize_roadmap_steps(steps: list) -> list:
     for i, step in enumerate(steps):
         if "title" in step and "status" in step and "type" in step:
             step["completedAt"] = step.get("completedAt", step.get("completed_at"))
+            step["resources"] = [_enrich_resource(r, i, j) for j, r in enumerate(step.get("resources", []))]
             normalized.append(step)
             continue
 
@@ -42,15 +82,9 @@ def _normalize_roadmap_steps(steps: list) -> list:
         resources = []
         for j, r in enumerate(step.get("resources", [])):
             if isinstance(r, str):
-                resources.append({
-                    "id": f"res-{i}-{j}",
-                    "title": r,
-                    "type": "article",
-                    "url": "#",
-                    "free": True,
-                })
+                resources.append(_enrich_resource({"title": r}, i, j))
             elif isinstance(r, dict):
-                resources.append(r)
+                resources.append(_enrich_resource(r, i, j))
 
         normalized.append({
             "id": step.get("id", f"step-{i}"),
