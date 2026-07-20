@@ -5,7 +5,7 @@
         "required_skills": ["Networking", "Linux", "Windows", "SIEM", "Log Analysis", "Incident Response", "MITRE ATT&CK"],
         "optional_skills": ["Python", "Bash", "PowerShell", "EDR"],
         "recommended_certifications": ["Google Cybersecurity Professional Certificate", "CompTIA Security+", "Blue Team Level 1"],
-        "suggested_projects": ["SIEM Home Lab", "Log Analyzer", "Threat Detection Dashboard"],
+        "suggested_projects": ["SIEM Home Lab", "Log Parser", "Threat Detection Dashboard"],
         "estimated_duration": 24
     },
     {
@@ -14,7 +14,7 @@
         "required_skills": ["Linux", "Networking", "Python", "Bash", "Nmap", "Burp Suite", "OWASP Top 10", "Active Directory"],
         "optional_skills": ["Metasploit", "Privilege Escalation", "Enumeration"],
         "recommended_certifications": ["eJPT", "PNPT", "OSCP"],
-        "suggested_projects": ["Port Scanner", "Vulnerability Scanner", "Web Application Assessment"],
+        "suggested_projects": ["Port Scanner", "Vulnerability Scanner", "Web Vulnerability Scanner"],
         "estimated_duration": 32
     },
     {
@@ -23,7 +23,7 @@
         "required_skills": ["Linux", "AWS", "IAM", "Docker", "Kubernetes", "Terraform"],
         "optional_skills": ["Azure", "GCP", "CI/CD"],
         "recommended_certifications": ["AWS Security Specialty", "CCSK", "Azure Security Engineer"],
-        "suggested_projects": ["Secure AWS Lab", "IAM Policy Analyzer", "Kubernetes Hardening"],
+        "suggested_projects": ["Cloud Security Lab", "IAM Policy Analyzer", "Kubernetes Hardening"],
         "estimated_duration": 28
     },
     {
@@ -32,7 +32,7 @@
         "required_skills": ["Secure Coding", "OWASP Top 10", "SAST", "DAST", "CI/CD", "Docker", "Threat Modeling"],
         "optional_skills": ["Python", "JavaScript", "Kubernetes"],
         "recommended_certifications": ["CSSLP"],
-        "suggested_projects": ["Secure REST API", "Code Scanner", "CI/CD Security Pipeline"],
+        "suggested_projects": ["Secure REST API", "Secrets Scanner", "CI/CD Security Pipeline"],
         "estimated_duration": 26
     },
     {
@@ -41,7 +41,7 @@
         "required_skills": ["Windows", "Linux", "Memory Analysis", "Disk Analysis", "Timeline Analysis"],
         "optional_skills": ["Python", "Malware Analysis", "Network Forensics"],
         "recommended_certifications": ["GCFA", "Blue Team Level 1"],
-        "suggested_projects": ["Memory Investigation", "Malware Analysis Lab", "Forensics Case Study"],
+        "suggested_projects": ["Memory Investigation", "Malware Analysis Sandbox", "Forensics Timeline Tool"],
         "estimated_duration": 28
     },
     {
@@ -59,7 +59,7 @@
         "required_skills": ["Networking", "Firewalls", "IAM", "AWS", "Docker", "Kubernetes", "Threat Modeling", "Secure Coding"],
         "optional_skills": ["Terraform", "CI/CD", "Compliance Frameworks"],
         "recommended_certifications": ["CISSP", "AWS Security Specialty", "CCSP"],
-        "suggested_projects": ["Enterprise Network Design", "Zero Trust Architecture Lab", "Cloud Security Architecture"],
+        "suggested_projects": ["Zero Trust Network Lab", "Cloud Security Lab", "Container Security Scanner"],
         "estimated_duration": 36
     },
     {
@@ -68,7 +68,7 @@
         "required_skills": ["CI/CD", "Docker", "Kubernetes", "SAST", "DAST", "Linux", "Python", "Terraform"],
         "optional_skills": ["AWS", "GCP", "Container Security", "Secrets Management"],
         "recommended_certifications": ["AWS Security Specialty", "Certified Kubernetes Security Specialist"],
-        "suggested_projects": ["DevSecOps Pipeline", "Container Security Scanner", "Infrastructure as Code Audit"],
+        "suggested_projects": ["DevSecOps Pipeline Dashboard", "Container Security Scanner", "Secrets Scanner"],
         "estimated_duration": 28
     },
     {
@@ -86,7 +86,7 @@
         "required_skills": ["Incident Response", "Log Analysis", "SIEM", "Memory Analysis", "Network Forensics", "Linux", "Windows"],
         "optional_skills": ["Malware Analysis", "OSINT", "YARA"],
         "recommended_certifications": ["GCIH", "Blue Team Level 1", "GCFA"],
-        "suggested_projects": ["Incident Response Playbook", "Malware Analysis Lab", " tabletop Exercise"],
+        "suggested_projects": ["Incident Response Playbook", "Malware Analysis Sandbox", "Tabletop Exercise"],
         "estimated_duration": 26
     }
 ]

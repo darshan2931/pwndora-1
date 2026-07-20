@@ -61,6 +61,48 @@ CERT_URLS = {
     "OSWE": "https://www.offensive-security.com/awe-oswe/",
 }
 
+PROJECT_URLS = {
+    "Port Scanner": {"github": "https://github.com/topics/port-scanner", "guide": "https://www.thepythoncode.com/article/write-a-port-scanner"},
+    "Password Strength Checker": {"github": "https://github.com/topics/password-strength", "guide": "https://www.thepythoncode.com/article/make-a-password-strength-checker"},
+    "Log Parser": {"github": "https://github.com/topics/log-analyzer", "guide": "https://www.linuxjournal.com/content/log-analysis-tools"},
+    "Web Vulnerability Scanner": {"github": "https://github.com/topics/web-vulnerability-scanner", "guide": "https://portswigger.net/web-security"},
+    "Network Monitoring Dashboard": {"github": "https://github.com/topics/network-monitoring", "guide": "https://docs.python.org/3/library/http.server.html"},
+    "Secure REST API": {"github": "https://github.com/topics/secure-api", "guide": "https://fastapi.tiangolo.com/tutorial/security/"},
+    "SIEM Home Lab": {"github": "https://github.com/topics/siem", "guide": "https://www.splunk.com/en_us/training/free-online-training.html"},
+    "CI/CD Security Pipeline": {"github": "https://github.com/topics/ci-cd-security", "guide": "https://docs.github.com/en/actions/security-guides"},
+    "Cloud Security Lab": {"github": "https://github.com/topics/aws-security", "guide": "https://docs.aws.amazon.com/security/"},
+    "Active Directory Lab": {"github": "https://github.com/topics/active-directory", "guide": "https://www.thehackerrecipes.com/"},
+    "Kubernetes Hardening": {"github": "https://github.com/topics/kubernetes-security", "guide": "https://kubernetes.io/docs/concepts/security/"},
+    "Memory Investigation": {"github": "https://github.com/topics/volatility", "guide": "https://www.volatilityfoundation.org/"},
+    "Vulnerability Scanner": {"github": "https://github.com/topics/vulnerability-scanner", "guide": "https://nmap.org/docs.html"},
+    "Packet Capture Analyzer": {"github": "https://github.com/topics/packet-analysis", "guide": "https://www.wireshark.org/docs/"},
+    "Threat Detection Dashboard": {"github": "https://github.com/topics/threat-detection", "guide": "https://attack.mitre.org/"},
+    "API Security Testing Suite": {"github": "https://github.com/topics/api-security", "guide": "https://owasp.org/www-project-api-security/"},
+    "Container Security Scanner": {"github": "https://github.com/topics/container-security", "guide": "https://docs.docker.com/engine/security/"},
+    "Zero Trust Network Lab": {"github": "https://github.com/topics/zero-trust", "guide": "https://www.nist.gov/itl/applied-cybersecurity/zero-trust-architecture"},
+    "Incident Response Playbook": {"github": "https://github.com/topics/incident-response", "guide": "https://www.nist.gov/itl/publications"},
+    "Malware Analysis Sandbox": {"github": "https://github.com/topics/malware-analysis", "guide": "https://www.malwarebytes.com/resources"},
+    "OSINT Recon Tool": {"github": "https://github.com/topics/osint", "guide": "https://osintframework.com/"},
+    "SIEM Rule Generator": {"github": "https://github.com/topics/siem-rules", "guide": "https://attack.mitre.org/"},
+    "Compliance Audit Framework": {"github": "https://github.com/topics/compliance", "guide": "https://pages.nist.gov/"},
+    "Wireless Network Auditor": {"github": "https://github.com/topics/wireless-security", "guide": "https://www.aircrack-ng.org/doku.php"},
+    "Phishing Detection Tool": {"github": "https://github.com/topics/phishing-detection", "guide": "https://www.phishtank.com/"},
+    "Secrets Scanner": {"github": "https://github.com/topics/secret-scanning", "guide": "https://docs.github.com/en/code-security/secret-scanning"},
+    "Threat Intelligence Feed Aggregator": {"github": "https://github.com/topics/threat-intelligence", "guide": "https://www.alienvault.com/open-threat-exchange"},
+    "Forensics Timeline Tool": {"github": "https://github.com/topics/forensics", "guide": "https://www.sleuthkit.org/"},
+    "IAM Policy Analyzer": {"github": "https://github.com/topics/iam", "guide": "https://docs.aws.amazon.com/IAM/latest/UserGuide/"},
+    "DevSecOps Pipeline Dashboard": {"github": "https://github.com/topics/devsecops", "guide": "https://owasp.org/www-project-devsecops-guideline/"},
+    "Compliance Gap Analysis": {"github": "https://github.com/topics/compliance", "guide": "https://www.nist.gov/itl/cybersecurity"},
+    "Risk Register Framework": {"github": "https://github.com/topics/risk-management", "guide": "https://www.nist.gov/itl/publications"},
+    "Policy Documentation Suite": {"github": "https://github.com/topics/security-policy", "guide": "https://www.sans.org/information-security-policy/"},
+    "Tabletop Exercise": {"github": "https://github.com/topics/incident-response", "guide": "https://www.cisa.gov/topics/incident-response-planning"},
+    "Threat Actor Profile": {"github": "https://github.com/topics/threat-intelligence", "guide": "https://attack.mitre.org/groups/"},
+    "OSINT Investigation": {"github": "https://github.com/topics/osint", "guide": "https://osintframework.com/"},
+    "Threat Feed Dashboard": {"github": "https://github.com/topics/threat-intelligence", "guide": "https://www.alienvault.com/open-threat-exchange"},
+    "Malware Analysis Sandbox": {"github": "https://github.com/topics/malware-analysis", "guide": "https://www.malwarebytes.com/resources"},
+    "Forensics Timeline Tool": {"github": "https://github.com/topics/forensics", "guide": "https://www.sleuthkit.org/"},
+}
+
 
 class CareerOrchestrator:
     def __init__(self, ai_service=None):
@@ -204,6 +246,70 @@ class CareerOrchestrator:
             insert_at = cn["insert_after"] + 1
             cn["node"]["status"] = "locked"
             roadmap_nodes.insert(insert_at, cn["node"])
+
+        role_data = self.kb.get_role(career_goal)
+        if not role_data:
+            canonical = self.kb.ROLE_ALIASES.get(career_goal.lower(), career_goal)
+            role_data = self.kb.get_role(canonical)
+        suggested_project_titles = role_data.get("suggested_projects", []) if role_data else []
+        all_projects = {p["title"]: p for p in self.kb.get_projects()}
+        skill_names_lower = [n["title"].lower() for n in roadmap_nodes if n["type"] == "skill"]
+        project_nodes = []
+        for proj_title in suggested_project_titles:
+            proj_data = all_projects.get(proj_title)
+            if not proj_data:
+                for t, p in all_projects.items():
+                    if proj_title.lower() in t.lower() or t.lower() in proj_title.lower():
+                        proj_data = p
+                        break
+            if not proj_data:
+                continue
+            proj_skills = [s.lower() for s in proj_data.get("skills", [])]
+            last_skill_idx = -1
+            for ps in proj_skills:
+                for idx, sn in enumerate(skill_names_lower):
+                    if ps == sn:
+                        last_skill_idx = max(last_skill_idx, idx)
+            if last_skill_idx == -1:
+                for idx, n in enumerate(roadmap_nodes):
+                    if n["type"] == "skill":
+                        last_skill_idx = max(last_skill_idx, idx)
+            urls = PROJECT_URLS.get(proj_data["title"], {})
+            project_nodes.append({
+                "insert_after": last_skill_idx,
+                "node": {
+                    "id": f"proj-{proj_data['title'].lower().replace(' ', '-')}",
+                    "title": proj_data["title"],
+                    "description": f"Hands-on project: {proj_data['title']}. Build {', '.join(proj_data.get('skills', [])[:3])} skills with real deliverables ({', '.join(proj_data.get('github_deliverables', [])[:2])}).",
+                    "type": "project",
+                    "status": "locked",
+                    "estimatedHours": proj_data.get("estimated_hours", 10),
+                    "difficulty": proj_data.get("difficulty", "Medium"),
+                    "skills": proj_data.get("skills", []),
+                    "prerequisites": [],
+                    "resources": [
+                        {
+                            "id": f"proj-res-{proj_data['title'].lower().replace(' ', '-')}-gh",
+                            "title": "GitHub Starter Template",
+                            "type": "lab",
+                            "url": urls.get("github", "#"),
+                            "free": True,
+                        },
+                        {
+                            "id": f"proj-res-{proj_data['title'].lower().replace(' ', '-')}-guide",
+                            "title": "Implementation Guide",
+                            "type": "course",
+                            "url": urls.get("guide", "#"),
+                            "free": True,
+                        },
+                    ],
+                },
+            })
+
+        project_nodes.sort(key=lambda p: p["insert_after"])
+        for pn in project_nodes:
+            insert_at = pn["insert_after"] + 1
+            roadmap_nodes.insert(insert_at, pn["node"])
 
         for idx, node in enumerate(roadmap_nodes):
             node["id"] = f"step-{idx}"

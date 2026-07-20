@@ -28,5 +28,12 @@
     {"title": "Threat Intelligence Feed Aggregator", "difficulty": "Medium", "skills": ["OSINT", "Python", "SIEM"], "estimated_hours": 14, "github_deliverables": ["aggregator.py", "feeds.yaml", "README.md"]},
     {"title": "Forensics Timeline Tool", "difficulty": "Hard", "skills": ["Timeline Analysis", "Disk Analysis", "Python"], "estimated_hours": 20, "github_deliverables": ["timeline.py", "README.md"]},
     {"title": "IAM Policy Analyzer", "difficulty": "Medium", "skills": ["AWS", "IAM", "Python"], "estimated_hours": 10, "github_deliverables": ["analyzer.py", "README.md"]},
-    {"title": "DevSecOps Pipeline Dashboard", "difficulty": "Medium", "skills": ["CI/CD", "SAST", "DAST", "JavaScript"], "estimated_hours": 16, "github_deliverables": ["dashboard/", "README.md"]}
+    {"title": "DevSecOps Pipeline Dashboard", "difficulty": "Medium", "skills": ["CI/CD", "SAST", "DAST", "JavaScript"], "estimated_hours": 16, "github_deliverables": ["dashboard/", "README.md"]},
+    {"title": "Compliance Gap Analysis", "difficulty": "Medium", "skills": ["Compliance Frameworks", "NIST", "ISO 27001"], "estimated_hours": 12, "github_deliverables": ["gap_report.md", "controls_mapping.xlsx", "README.md"]},
+    {"title": "Risk Register Framework", "difficulty": "Medium", "skills": ["Risk Assessment", "Compliance Frameworks"], "estimated_hours": 10, "github_deliverables": ["risk_register.xlsx", "methodology.md", "README.md"]},
+    {"title": "Policy Documentation Suite", "difficulty": "Easy", "skills": ["Security Auditing", "Compliance Frameworks"], "estimated_hours": 8, "github_deliverables": ["policies/", "templates/", "README.md"]},
+    {"title": "Tabletop Exercise", "difficulty": "Easy", "skills": ["Incident Response", "MITRE ATT&CK"], "estimated_hours": 6, "github_deliverables": ["scenario.md", "report.md", "README.md"]},
+    {"title": "Threat Actor Profile", "difficulty": "Medium", "skills": ["MITRE ATT&CK", "OSINT"], "estimated_hours": 12, "github_deliverables": ["profile.md", "indicators.yaml", "README.md"]},
+    {"title": "OSINT Investigation", "difficulty": "Easy", "skills": ["OSINT", "Python"], "estimated_hours": 10, "github_deliverables": ["investigation.md", "recon.py", "README.md"]},
+    {"title": "Threat Feed Dashboard", "difficulty": "Medium", "skills": ["SIEM", "OSINT", "Python"], "estimated_hours": 14, "github_deliverables": ["dashboard.py", "feeds.yaml", "README.md"]}
 ]
