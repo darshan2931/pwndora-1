@@ -738,7 +738,7 @@ export default function OnboardingPage() {
         const formData = new FormData();
         formData.append('resume', f);
         formData.append('career_goal', state.targetRole || 'Penetration Tester');
-        formData.append('study_hours', state.studyHours || '10');
+        formData.append('study_hours', String({ 'lt5': 4, '5-10': 8, '10-20': 15, '20+': 25 }[state.studyHours] || 10));
         const res = await api.analyzeResume(formData);
         
         if (res.success && res.data) {

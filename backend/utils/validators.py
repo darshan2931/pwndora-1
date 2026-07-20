@@ -42,7 +42,8 @@ def validate_career_goal(goal: str) -> Optional[str]:
     goal = sanitize_string(goal, max_length=100)
     VALID_CAREERS = {
         "soc analyst", "penetration tester", "cloud security engineer",
-        "application security engineer", "digital forensics analyst",
+        "application security engineer", "appsec engineer",
+        "digital forensics analyst", "dfir specialist",
         "threat intelligence analyst", "security architect",
         "devsecops engineer", "grc analyst", "incident responder",
     }
