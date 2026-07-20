@@ -68,21 +68,45 @@ class CareerOrchestrator:
         if rec.next_project:
             projects.append(rec.next_project)
 
+        roadmap_nodes = []
+        for i, step in enumerate(roadmap.steps):
+            if i == 0:
+                status = "in-progress"
+            elif i == 1:
+                status = "available"
+            else:
+                status = "locked"
+            resources = []
+            for j, r in enumerate(step.resources):
+                if isinstance(r, str):
+                    resources.append({
+                        "id": f"res-{i}-{j}",
+                        "title": r,
+                        "type": "article",
+                        "url": "#",
+                        "free": True,
+                    })
+                else:
+                    resources.append(r)
+            roadmap_nodes.append({
+                "id": f"step-{i}",
+                "title": step.skill.name,
+                "description": f"Learn {step.skill.name} for {career_goal}",
+                "type": "skill",
+                "status": status,
+                "estimatedHours": step.estimated_hours,
+                "difficulty": step.skill.difficulty.capitalize() if step.skill.difficulty else "Beginner",
+                "skills": [step.skill.name],
+                "prerequisites": step.prerequisites,
+                "resources": resources,
+            })
+
         return {
             "career_goal": career_goal,
             "career_readiness": assessment.readiness_score,
             "matched_skills": [s.name for s in assessment.matched_skills],
             "missing_skills": [s.name for s in assessment.missing_skills],
-            "roadmap": [
-                {
-                    "step": step.step,
-                    "skill": step.skill.name,
-                    "prerequisites": step.prerequisites,
-                    "estimated_hours": step.estimated_hours,
-                    "resources": step.resources,
-                }
-                for step in roadmap.steps
-            ],
+            "roadmap": roadmap_nodes,
             "recommended_projects": projects,
             "estimated_weeks": roadmap.estimated_weeks,
             "ai_summary": ai_summary,

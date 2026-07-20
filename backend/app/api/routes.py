@@ -21,6 +21,51 @@ ALLOWED_EXTENSIONS = {".pdf", ".docx", ".txt", ".png", ".jpg", ".jpeg"}
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
 
 
+def _normalize_roadmap_steps(steps: list) -> list:
+    """Convert old-format roadmap steps to the RoadmapNode format expected by the frontend."""
+    normalized = []
+    total = len(steps)
+    for i, step in enumerate(steps):
+        if "title" in step and "status" in step and "type" in step:
+            normalized.append(step)
+            continue
+
+        skill_name = step.get("skill", "Unknown")
+        if i == 0:
+            status = "in-progress"
+        elif i == 1:
+            status = "available"
+        else:
+            status = "locked"
+
+        resources = []
+        for j, r in enumerate(step.get("resources", [])):
+            if isinstance(r, str):
+                resources.append({
+                    "id": f"res-{i}-{j}",
+                    "title": r,
+                    "type": "article",
+                    "url": "#",
+                    "free": True,
+                })
+            elif isinstance(r, dict):
+                resources.append(r)
+
+        normalized.append({
+            "id": step.get("id", f"step-{i}"),
+            "title": skill_name,
+            "description": step.get("description", f"Learn {skill_name}"),
+            "type": step.get("type", "skill"),
+            "status": step.get("status", status),
+            "estimatedHours": step.get("estimated_hours", step.get("estimatedHours", 10)),
+            "difficulty": step.get("difficulty", "Beginner"),
+            "skills": step.get("skills", [skill_name]),
+            "prerequisites": step.get("prerequisites", []),
+            "resources": resources,
+        })
+    return normalized
+
+
 def _get_ai_service():
     from app.main import get_ai_service  # pyrefly: ignore [missing-import]
     return get_ai_service()
@@ -460,7 +505,7 @@ async def toggle_roadmap_step(
     if str(roadmap.assessment_id) not in user_assessment_ids and str(roadmap.id) not in user_assessment_ids:
         raise HTTPException(status_code=403, detail="You do not have permission to modify this roadmap")
 
-    steps = list(roadmap.steps) # create a copy
+    steps = _normalize_roadmap_steps(list(roadmap.steps))
     
     if step_index < 0 or step_index >= len(steps):
         raise HTTPException(status_code=400, detail="Invalid step index")
@@ -510,7 +555,7 @@ async def get_dashboard(current_user: User = Depends(get_current_user)):
         return {"success": True, "data": None}
         
     db_roadmap = roadmap_repo.get_by_assessment(str(db_assess.id))
-    roadmap_steps = db_roadmap.steps if db_roadmap else []
+    roadmap_steps = _normalize_roadmap_steps(db_roadmap.steps if db_roadmap else [])
     
     # Build Profile
     role_data = knowledge_loader.get_role(str(db_assess.career_goal)) or {}
