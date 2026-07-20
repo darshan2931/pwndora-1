@@ -1,7 +1,9 @@
+import logging
 import os
 from pathlib import Path
 
 PROMPTS_DIR = Path(__file__).parent / "prompts"
+logger = logging.getLogger(__name__)
 
 class PromptBuilder:
     """Loads markdown prompt templates and renders them with variables."""
@@ -24,8 +26,8 @@ class PromptBuilder:
         # Format the template with provided kwargs (if any)
         try:
             rendered = template.format(**kwargs)
-        except KeyError:
-            # Fallback if the template has unmapped variables
+        except KeyError as e:
+            logger.warning("Prompt template '%s' missing variable: %s", template_name, e)
             rendered = template
             
         if context:

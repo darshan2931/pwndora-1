@@ -1,4 +1,4 @@
-from typing import List
+from typing import Any, List
 
 from app.domain.models import CyberProfile, Assessment, Roadmap
 
@@ -15,7 +15,7 @@ class CareerService:
     def analyze(self, profile: CyberProfile, career_goal: str) -> Assessment:
         raise NotImplementedError()
 
-    def calculate_readiness(self, profile: CyberProfile, career: any, matched: int, total_skills: int) -> int:
+    def calculate_readiness(self, profile: CyberProfile, career: Any, matched: int, total_skills: int) -> int:
         if total_skills == 0:
             return 0
         return round((matched / total_skills) * 100)

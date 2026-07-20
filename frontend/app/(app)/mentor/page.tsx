@@ -35,19 +35,22 @@ function MessageBubble({ message }: { message: MentorMessage }) {
       .replace(/"/g, '&quot;');
 
     return text
-      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-      .replace(/`(.+?)`/g, '<code class="px-1.5 py-0.5 rounded bg-white/[0.08] text-blue-300 text-xs font-mono">$1</code>')
       .split('\n')
-      .map((line, i) => {
-        const escaped = escapeHtml(line.replace(/\*\*(.+?)\*\*/g, '$1').replace(/`(.+?)`/g, '$1'));
-        if (line.match(/^\d+\.\s/)) {
-          return `<div class="flex gap-2 my-1"><span class="text-zinc-500 font-mono text-xs mt-0.5">${line.match(/^(\d+)\./)?.[1]}.</span><span>${escaped.replace(/^\d+\.\s/, '')}</span></div>`;
+      .map((line) => {
+        const escaped = escapeHtml(line);
+        let formatted = escaped
+          .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+          .replace(/`(.+?)`/g, '<code class="px-1.5 py-0.5 rounded bg-white/[0.08] text-blue-300 text-xs font-mono">$1</code>');
+        if (escaped.match(/^\d+\.\s/)) {
+          const num = escaped.match(/^(\d+)\./)?.[1];
+          const content = escaped.replace(/^\d+\.\s/, '');
+          return `<div class="flex gap-2 my-1"><span class="text-zinc-500 font-mono text-xs mt-0.5">${num}.</span><span>${content}</span></div>`;
         }
-        if (line.startsWith('**') && line.endsWith('**')) {
+        if (escaped.startsWith('**') && escaped.endsWith('**')) {
           return `<div class="font-semibold text-[#fafafa] mt-3 mb-1">${escaped.slice(2, -2)}</div>`;
         }
-        if (line === '') return '<div class="h-2"></div>';
-        return `<p class="leading-relaxed">${escaped}</p>`;
+        if (escaped === '') return '<div class="h-2"></div>';
+        return `<p class="leading-relaxed">${formatted}</p>`;
       })
       .join('');
   };
@@ -88,6 +91,7 @@ export default function MentorPage() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
   
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -97,8 +101,9 @@ export default function MentorPage() {
       try {
         const d = await api.getDashboardData();
         setData(d.data);
-      } catch (e) {
+      } catch (e: any) {
         console.error(e);
+        setError(e?.message || 'Failed to load mentor data');
       }
     }
     loadData();
@@ -107,6 +112,16 @@ export default function MentorPage() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
+
+  if (error) return (
+    <div className="p-8 text-center">
+      <div className="text-red-400 mb-2">Failed to load mentor</div>
+      <div className="text-zinc-500 text-sm mb-4">{error}</div>
+      <button onClick={() => window.location.reload()} className="px-4 py-2 rounded-lg bg-blue-500/20 text-blue-400 text-sm hover:bg-blue-500/30 transition-colors">
+        Retry
+      </button>
+    </div>
+  );
 
   if (!data) return <div className="p-8 text-white animate-pulse">Loading mentor...</div>;
   const { profile, mentorContext } = data;

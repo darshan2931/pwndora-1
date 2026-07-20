@@ -11,13 +11,13 @@ class ResponseValidator:
     
     @staticmethod
     def validate_json(text: str) -> Optional[dict]:
-        """Attempts to parse JSON from a raw string, stripping markdown if present."""
+        """Attempts to parse JSON from a raw string, stripping markdown fences if present."""
         try:
             cleaned = text.strip()
-            if cleaned.startswith("```"):
-                cleaned = cleaned.split("\n", 1)[1]
-                if cleaned.endswith("```"):
-                    cleaned = cleaned[:-3]
+            fence_pattern = re.compile(r'^```(?:json|JSON)?\s*\n?', re.MULTILINE)
+            cleaned = fence_pattern.sub('', cleaned)
+            if cleaned.endswith('```'):
+                cleaned = cleaned[:-3]
             return json.loads(cleaned.strip())
         except (json.JSONDecodeError, IndexError) as e:
             logger.warning("Failed to validate JSON: %s", e)

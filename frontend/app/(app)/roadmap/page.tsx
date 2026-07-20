@@ -144,14 +144,17 @@ function NodeCard({ node, index, totalNodes, onToggle }: { node: RoadmapNode; in
 
 export default function RoadmapPage() {
   const [data, setData] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [activeFilter, setActiveFilter] = useState('All');
 
   useEffect(() => {
     async function loadData() {
       try {
         const d = await api.getDashboardData();
         setData(d.data);
-      } catch (e) {
+      } catch (e: any) {
         console.error(e);
+        setError(e?.message || 'Failed to load roadmap');
       }
     }
     loadData();
@@ -188,6 +191,16 @@ export default function RoadmapPage() {
       setData(d.data);
     }
   };
+
+  if (error) return (
+    <div className="p-8 text-center">
+      <div className="text-red-400 mb-2">Failed to load roadmap</div>
+      <div className="text-zinc-500 text-sm mb-4">{error}</div>
+      <button onClick={() => window.location.reload()} className="px-4 py-2 rounded-lg bg-blue-500/20 text-blue-400 text-sm hover:bg-blue-500/30 transition-colors">
+        Retry
+      </button>
+    </div>
+  );
 
   if (!data || !data.roadmap) return <div className="p-8 text-white animate-pulse">Loading roadmap...</div>;
 
@@ -234,7 +247,7 @@ export default function RoadmapPage() {
       {/* Filter tabs */}
       <div className="flex items-center gap-2 mb-5">
         {['All', 'Skills', 'Projects', 'Certifications'].map(f => (
-          <button key={f} className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${f === 'All' ? 'bg-white/[0.08] text-[#fafafa]' : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.04]'}`}>
+          <button key={f} onClick={() => setActiveFilter(f)} className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${f === activeFilter ? 'bg-white/[0.08] text-[#fafafa]' : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.04]'}`}>
             {f}
           </button>
         ))}
@@ -242,9 +255,19 @@ export default function RoadmapPage() {
 
       {/* Timeline */}
       <div className="space-y-4">
-        {roadmap.map((node: any, i: number) => (
-          <NodeCard key={node.id} node={node} index={i} totalNodes={roadmap.length} onToggle={handleToggle} />
-        ))}
+        {roadmap
+          .filter((node: any) => {
+            if (activeFilter === 'All') return true;
+            const type = node.type || 'skill';
+            if (activeFilter === 'Skills') return type === 'skill' || type === 'skills';
+            if (activeFilter === 'Projects') return type === 'project' || type === 'projects';
+            if (activeFilter === 'Certifications') return type === 'certification' || type === 'certifications';
+            return true;
+          })
+          .map((node: any, i: number) => {
+            const originalIndex = roadmap.indexOf(node);
+            return <NodeCard key={node.id} node={node} index={originalIndex} totalNodes={roadmap.length} onToggle={handleToggle} />;
+          })}
       </div>
     </div>
   );

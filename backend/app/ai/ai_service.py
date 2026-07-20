@@ -114,7 +114,5 @@ class AIService:
         )
 
     def clear_session(self, session_id: str) -> None:
-        """Clears cached chat session data."""
-        if hasattr(self.orchestrator, '_chat_sessions'):
-            self.orchestrator._chat_sessions.pop(session_id, None)
+        """Clears cached chat session data. Currently a no-op as sessions are managed in DB."""
 

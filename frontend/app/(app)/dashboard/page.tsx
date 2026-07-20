@@ -36,9 +36,12 @@ function StatCard({ label, value, sub, icon: Icon, color = 'blue' }: {
   );
 }
 
+const DAYS_ABBR = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const todayAbbr = DAYS_ABBR[new Date().getDay()];
+
 function WeeklyBar({ hours, goal, day }: { hours: number; goal: number; day: string }) {
   const pct = Math.min((hours / goal) * 100, 100);
-  const isToday = day === 'Fri'; // mock: today is Friday
+  const isToday = day === todayAbbr;
   return (
     <div className="flex flex-col items-center gap-1.5">
       <div className="relative h-16 w-6 bg-white/[0.04] rounded-sm overflow-hidden">
@@ -87,18 +90,30 @@ function RoadmapPreview({ roadmap }: { roadmap: any[] }) {
 
 export default function DashboardPage() {
   const [data, setData] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadData() {
       try {
         const d = await api.getDashboardData();
         setData(d.data);
-      } catch (e) {
+      } catch (e: any) {
         console.error(e);
+        setError(e?.message || 'Failed to load dashboard data');
       }
     }
     loadData();
   }, []);
+
+  if (error) return (
+    <div className="p-8 text-center">
+      <div className="text-red-400 mb-2">Failed to load dashboard</div>
+      <div className="text-zinc-500 text-sm mb-4">{error}</div>
+      <button onClick={() => window.location.reload()} className="px-4 py-2 rounded-lg bg-blue-500/20 text-blue-400 text-sm hover:bg-blue-500/30 transition-colors">
+        Retry
+      </button>
+    </div>
+  );
 
   if (!data || !data.profile) return <div className="p-8 text-white animate-pulse">Loading dashboard...</div>;
 

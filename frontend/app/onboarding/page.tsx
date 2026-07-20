@@ -272,16 +272,27 @@ function ResumeUploadScreen({ file, onFile, onSkip }: {
   const [uploading, setUploading] = useState(false);
   const [uploadStage, setUploadStage] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, []);
 
   const handleFile = useCallback((f: File) => {
     if (!['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'].includes(f.type) && !f.name.endsWith('.txt')) return;
     onFile(f);
     setUploading(true);
     let stage = 0;
-    const interval = setInterval(() => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    intervalRef.current = setInterval(() => {
       stage += 1;
       setUploadStage(stage);
-      if (stage >= UPLOAD_STAGES.length - 1) clearInterval(interval);
+      if (stage >= UPLOAD_STAGES.length - 1) {
+        clearInterval(intervalRef.current!);
+        intervalRef.current = null;
+      }
     }, 600);
   }, [onFile]);
 

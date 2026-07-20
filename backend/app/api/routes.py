@@ -1,7 +1,6 @@
 import os
 import logging
 import datetime
-from typing import Dict
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile, Depends
 from sqlalchemy.exc import OperationalError
@@ -17,9 +16,6 @@ from app.api.auth import router as auth_router
 logger = logging.getLogger(__name__)
 router = APIRouter()
 router.include_router(auth_router)
-
-_cache: Dict[str, dict] = {}
-CACHE_TTL = 300
 
 ALLOWED_EXTENSIONS = {".pdf", ".docx", ".txt", ".png", ".jpg", ".jpeg"}
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5MB
@@ -139,7 +135,7 @@ async def analyze_career(
             extracted_skills = [s.name for s in profile.skills]
         except Exception as e:
             logger.error("Failed to parse resume: %s", e)
-            raise HTTPException(status_code=500, detail=f"Failed to parse resume: {e}")
+            raise HTTPException(status_code=500, detail="Failed to parse resume")
         finally:
             if temp_file_path and os.path.exists(temp_file_path):
                 try:
@@ -348,7 +344,7 @@ async def clear_mentor_session(session_id: str, current_user: User = Depends(get
 
 
 @router.get("/resources/{skill_name}")
-async def get_skill_resources(skill_name: str):
+async def get_skill_resources(skill_name: str, current_user: User = Depends(get_current_user)):
     skill_name = sanitize_string(skill_name, max_length=100)
     if not skill_name:
         raise HTTPException(status_code=400, detail="Invalid skill name")
@@ -408,7 +404,7 @@ async def upload_resume_review(
         }
     except Exception as e:
         logger.error("Failed to process resume review: %s", e)
-        raise HTTPException(status_code=500, detail=f"Failed to process resume review: {e}")
+        raise HTTPException(status_code=500, detail="Failed to process resume review")
     finally:
         if temp_file_path and os.path.exists(temp_file_path):
             try:
@@ -453,6 +449,16 @@ async def toggle_roadmap_step(
         roadmap = db.query(Roadmap).filter(Roadmap.id == roadmap_id).first()
         if not roadmap:
             raise HTTPException(status_code=404, detail="Roadmap not found")
+
+    assessment_repo = AssessmentRepository()
+    user_assessments = assessment_repo.get_by_user_id(str(current_user.id))
+    if isinstance(user_assessments, list):
+        user_assessment_ids = {str(a.id) for a in user_assessments}
+    else:
+        user_assessment_ids = {str(user_assessments.id)} if user_assessments else set()
+    
+    if str(roadmap.assessment_id) not in user_assessment_ids and str(roadmap.id) not in user_assessment_ids:
+        raise HTTPException(status_code=403, detail="You do not have permission to modify this roadmap")
 
     steps = list(roadmap.steps) # create a copy
     

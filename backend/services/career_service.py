@@ -1,5 +1,5 @@
 import logging
-from typing import Tuple, List, Dict
+from typing import Dict, List, Tuple
 
 from app.domain.models import Assessment, Career, Skill, CyberProfile
 from knowledge.loader import knowledge_loader
@@ -59,7 +59,7 @@ class CareerService(ICareerService):
                 "category": "",
                 "difficulty": "intermediate",
             }
-            # Calculate unlocks if not provided
+            skill_data = dict(skill_data)
             if "unlocks" not in skill_data:
                 skill_data["unlocks"] = []
             

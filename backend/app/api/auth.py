@@ -23,6 +23,19 @@ def register(request: dict, db: Session = Depends(get_db)) -> Any:
     if not email or not password:
         raise HTTPException(status_code=400, detail="Email and password are required")
 
+    import re
+    if not re.match(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$', email):
+        raise HTTPException(status_code=400, detail="Invalid email format")
+
+    if len(password) < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
+    if not re.search(r'[A-Z]', password):
+        raise HTTPException(status_code=400, detail="Password must contain at least one uppercase letter")
+    if not re.search(r'[a-z]', password):
+        raise HTTPException(status_code=400, detail="Password must contain at least one lowercase letter")
+    if not re.search(r'[0-9]', password):
+        raise HTTPException(status_code=400, detail="Password must contain at least one digit")
+
     user = db.scalars(select(User).filter_by(email=email)).first()
     if user:
         raise HTTPException(

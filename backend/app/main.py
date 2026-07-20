@@ -63,17 +63,15 @@ app = FastAPI(
 _cors_origins = [
     "http://localhost:3000",
     "http://localhost:3001",
-    "https://cyberpath.vercel.app",
-    "https://cyberpath-ai.vercel.app",
+    "http://localhost:80",
 ]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,
-    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 app.add_middleware(AccessLogMiddleware)
 
