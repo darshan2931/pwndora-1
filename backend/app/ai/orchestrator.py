@@ -109,6 +109,13 @@ class AIOrchestrator:
         """Returns mock data depending on the requested task."""
         if template_name == "resume":
             return {"skills": ["Python", "Linux"], "projects": [], "certifications": []}
+        elif template_name == "resume_profile":
+            return {
+                "full_name": None, "email": None, "phone": None, "location": None,
+                "summary": None, "education": [], "experience": [],
+                "skills": [], "projects": [], "certifications": [],
+                "urls": {"github": [], "linkedin": [], "portfolio": [], "personal_website": [], "other": []}
+            }
         elif template_name == "quiz":
             return {"questions": [
                 {"question": "What is Linux?", "options": ["OS", "Browser", "Language", "Fruit"], "correct_index": 0, "explanation": "It's an OS"}

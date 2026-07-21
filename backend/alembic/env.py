@@ -9,7 +9,9 @@ from models.sqlalchemy_models import (
     User, CyberProfile, Assessment, Roadmap, ChatMemory,
     ResumeAnalysis, ChatHistory, ResumeReview,
     Skill, Project, Mission, Progress, WeeklyReport,
-    Achievement, KnowledgeCache,
+    Achievement, KnowledgeCache, ResumeProfile,
+    GitHubProfile, GitHubRepositoryEvidence,
+    SkillEvidence, UserSkillProfile,
 )
 
 config = context.config

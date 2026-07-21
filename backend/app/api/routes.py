@@ -2,7 +2,7 @@ import os
 import logging
 import datetime
 
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile, Depends
+from fastapi import APIRouter, File, Form, UploadFile, Depends
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session
 from sqlalchemy import select
@@ -12,6 +12,11 @@ from app.api.deps import get_current_user
 from models.sqlalchemy_models import User, ChatMemory
 from database.session import get_db, SessionLocal
 from app.api.auth import router as auth_router
+from core.errors import (
+    ErrorCode, error_response, validation_error, not_found, forbidden,
+    unauthorized, ai_unavailable, ai_error, database_error, file_too_large,
+    unsupported_file_type, internal_error,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -147,7 +152,7 @@ def _get_orchestrator():
 async def get_assessment(assessment_id: str, current_user: User = Depends(get_current_user)):
     assessment_id = sanitize_string(assessment_id, max_length=100)
     if not assessment_id:
-        raise HTTPException(status_code=400, detail="Invalid assessment ID")
+        validation_error("Invalid assessment ID")
 
     try:
         from repositories.repositories import AssessmentRepository, RoadmapRepository  # pyrefly: ignore [missing-import]
@@ -157,10 +162,10 @@ async def get_assessment(assessment_id: str, current_user: User = Depends(get_cu
 
         db_assess = assessment_repo.get_by_id(assessment_id)
         if not db_assess:
-            raise HTTPException(status_code=404, detail="Assessment not found")
-            
+            not_found("Assessment not found")
+
         if str(db_assess.user_id) != str(current_user.id):
-            raise HTTPException(status_code=403, detail="Not authorized to view this assessment")
+            forbidden("Not authorized to view this assessment")
 
         role_data = knowledge_loader.get_role(str(db_assess.career_goal)) or {}
 
@@ -187,13 +192,11 @@ async def get_assessment(assessment_id: str, current_user: User = Depends(get_cu
                 "created_at": str(db_assess.created_at) if db_assess.created_at else None,
             },
         }
-    except HTTPException:
-        raise
     except OperationalError:
-        raise HTTPException(status_code=503, detail="Database is unavailable. Please try again later.")
+        database_error()
     except Exception as e:
         logger.warning("Failed to retrieve assessment: %s", e)
-        raise HTTPException(status_code=500, detail="Failed to retrieve assessment")
+        internal_error("Failed to retrieve assessment")
 
 
 @router.post("/career/analyze")
@@ -205,11 +208,11 @@ async def analyze_career(
     current_user: User = Depends(get_current_user),
 ):
     if not resume and not manual_skills:
-        raise HTTPException(status_code=400, detail="Either resume or manual_skills is required")
+        validation_error("Either resume or manual_skills is required")
 
     validated_goal = validate_career_goal(career_goal)
     if not validated_goal:
-        raise HTTPException(status_code=400, detail=f"Invalid career goal: {career_goal}")
+        validation_error(f"Invalid career goal: {career_goal}")
 
     study_hours = validate_study_hours(study_hours)
 
@@ -217,10 +220,10 @@ async def analyze_career(
     if resume:
         ext = os.path.splitext(resume.filename or "")[1].lower()
         if ext not in ALLOWED_EXTENSIONS:
-            raise HTTPException(status_code=400, detail=f"Unsupported file type: {ext}. Use PDF, DOCX, or TXT.")
+            unsupported_file_type(ext)
 
         if resume.size and resume.size > MAX_FILE_SIZE:
-            raise HTTPException(status_code=400, detail="File too large. Maximum size is 5MB.")
+            file_too_large()
 
         from services.storage_service import StorageService
         storage = StorageService()
@@ -239,7 +242,7 @@ async def analyze_career(
             extracted_skills = [s.name for s in profile.skills]
         except Exception as e:
             logger.error("Failed to parse resume: %s", e)
-            raise HTTPException(status_code=500, detail="Failed to parse resume")
+            internal_error("Failed to parse resume")
         finally:
             if temp_file_path and os.path.exists(temp_file_path):
                 try:
@@ -251,7 +254,7 @@ async def analyze_career(
         extracted_skills = validate_skills_list(raw)
 
     if not extracted_skills:
-        raise HTTPException(status_code=400, detail="No valid skills found in input")
+        validation_error("No valid skills found in input")
 
     orchestrator = _get_orchestrator()
     result = await orchestrator.analyze_with_ai(
@@ -275,7 +278,7 @@ async def save_assessment(request: dict, current_user: User = Depends(get_curren
     learning_preferences = request.get("learning_preferences", [])
 
     if not career_goal:
-        raise HTTPException(status_code=400, detail="career_goal is required")
+        validation_error("career_goal is required")
 
     try:
         from repositories.repositories import AssessmentRepository, RoadmapRepository  # pyrefly: ignore [missing-import]
@@ -310,10 +313,10 @@ async def save_assessment(request: dict, current_user: User = Depends(get_curren
             },
         }
     except OperationalError:
-        raise HTTPException(status_code=503, detail="Database is unavailable. Please try again later.")
+        database_error()
     except Exception as e:
         logger.warning("Failed to save assessment to DB: %s", e)
-        raise HTTPException(status_code=500, detail="Failed to save assessment")
+        internal_error("Failed to save assessment")
 
 
 
@@ -360,13 +363,13 @@ async def mentor_chat(
     question = sanitize_string(request.get("question", ""), max_length=500)
     session_id = sanitize_string(request.get("session_id", ""), max_length=100) or "default"
     if not question:
-        raise HTTPException(status_code=400, detail="Question is required")
+        validation_error("Question is required")
 
     ai_svc = None
     try:
         ai_svc = _get_ai_service()
     except RuntimeError:
-        raise HTTPException(status_code=503, detail="AI Mentor service is not configured.")
+        ai_unavailable("AI Mentor service is not configured.")
 
     from repositories.repositories import AssessmentRepository, RoadmapRepository
     from app.ai.context_builder import ContextBuilder
@@ -409,7 +412,7 @@ async def mentor_chat(
         )
     except RuntimeError as e:
         logger.warning("Mentor chat AI failed: %s", e)
-        raise HTTPException(status_code=503, detail="AI Mentor service is currently unavailable.")
+        ai_unavailable("AI Mentor service is currently unavailable.")
 
     # 3. Summarize the new turn + history
     history.append({"role": "user", "content": question})
@@ -454,7 +457,7 @@ async def clear_mentor_session(session_id: str, current_user: User = Depends(get
 async def get_skill_resources(skill_name: str, current_user: User = Depends(get_current_user)):
     skill_name = sanitize_string(skill_name, max_length=100)
     if not skill_name:
-        raise HTTPException(status_code=400, detail="Invalid skill name")
+        validation_error("Invalid skill name")
     from knowledge.resources import get_free_resources  # pyrefly: ignore [missing-import]
     resources = get_free_resources(skill_name)
     return {"success": True, "data": resources}
@@ -467,14 +470,14 @@ async def upload_resume_review(
     current_user: User = Depends(get_current_user),
 ):
     if not career_goal:
-        raise HTTPException(status_code=400, detail="Career goal is required")
-        
+        validation_error("Career goal is required")
+
     ext = os.path.splitext(resume.filename or "")[1].lower()
     if ext not in ALLOWED_EXTENSIONS:
-        raise HTTPException(status_code=400, detail=f"Unsupported file type: {ext}. Use PDF, DOCX, or TXT.")
+        unsupported_file_type(ext)
 
     if resume.size and resume.size > MAX_FILE_SIZE:
-        raise HTTPException(status_code=400, detail="File too large. Maximum size is 5MB.")
+        file_too_large()
 
     temp_file_path = None
     try:
@@ -511,7 +514,7 @@ async def upload_resume_review(
         }
     except Exception as e:
         logger.error("Failed to process resume review: %s", e)
-        raise HTTPException(status_code=500, detail="Failed to process resume review")
+        internal_error("Failed to process resume review")
     finally:
         if temp_file_path and os.path.exists(temp_file_path):
             try:
@@ -540,6 +543,405 @@ async def get_resume_reviews(current_user: User = Depends(get_current_user)):
     }
 
 
+@router.post("/resume/profile/analyze")
+async def analyze_resume_profile(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+):
+    from services.resume_text_extractor import ResumeTextExtractor
+    from services.resume_profile_service import ResumeProfileService
+    from repositories.repositories import ResumeProfileRepository
+
+    repo = ResumeProfileRepository()
+    temp_file_path = None
+
+    try:
+        file_size = file.size if hasattr(file, 'size') else None
+        ext = ResumeTextExtractor.validate_file(file.filename, file_size)
+
+        from services.storage_service import StorageService
+        storage = StorageService()
+        temp_file_path = storage.save_upload(file)
+
+        actual_size = os.path.getsize(temp_file_path)
+
+        db_profile = repo.create(
+            user_id=str(current_user.id),
+            original_filename=os.path.basename(file.filename or "unknown"),
+            file_type=ext.lstrip("."),
+            file_size=actual_size,
+        )
+        profile_id = str(db_profile.id)
+
+        repo.update_status(profile_id, "extracting")
+
+        extraction = ResumeTextExtractor.extract(temp_file_path)
+
+        repo.update_status(profile_id, "analyzing")
+
+        from services.resume_url_extractor import ResumeURLExtractor
+        urls = ResumeURLExtractor.extract(extraction.text)
+
+        ai_svc = None
+        try:
+            ai_svc = _get_ai_service()
+        except Exception:
+            pass
+
+        profile_svc = ResumeProfileService(ai_service=ai_svc)
+        profile_data = await profile_svc._extract_profile_with_ai(extraction.text)
+
+        profile_dict = profile_data.model_dump() if profile_data else {}
+
+        repo.update_result(
+            profile_id=profile_id,
+            extracted_profile=profile_dict,
+            extracted_urls=urls,
+            raw_text=extraction.text[:50000],
+        )
+
+        return {
+            "success": True,
+            "data": {
+                "id": profile_id,
+                "status": "completed",
+                "profile": profile_dict,
+                "urls": urls,
+                "metadata": {
+                    "file_type": extraction.file_type,
+                    "character_count": extraction.character_count,
+                    "page_count": extraction.page_count,
+                },
+            },
+        }
+
+    except ValueError as e:
+        if temp_file_path and os.path.exists(temp_file_path):
+            try:
+                os.remove(temp_file_path)
+            except OSError:
+                pass
+        if 'profile_id' in dir():
+            repo.update_status(str(profile_id), "failed", str(e))
+        validation_error(str(e))
+    except Exception as e:
+        logger.error("Resume profile analysis failed: %s", e)
+        if 'profile_id' in dir():
+            try:
+                repo.update_status(str(profile_id), "failed", str(e))
+            except Exception:
+                pass
+        if temp_file_path and os.path.exists(temp_file_path):
+            try:
+                os.remove(temp_file_path)
+            except OSError:
+                pass
+        internal_error("Failed to analyze resume profile")
+    finally:
+        if temp_file_path and os.path.exists(temp_file_path):
+            try:
+                os.remove(temp_file_path)
+            except OSError:
+                pass
+
+
+@router.get("/resume/profile")
+async def get_resume_profile(current_user: User = Depends(get_current_user)):
+    from repositories.repositories import ResumeProfileRepository
+
+    repo = ResumeProfileRepository()
+    profile = repo.get_latest_by_user_id(str(current_user.id))
+
+    if not profile:
+        return {
+            "success": True,
+            "data": None,
+        }
+
+    return {
+        "success": True,
+        "data": {
+            "id": str(profile.id),
+            "status": profile.processing_status,
+            "profile": profile.extracted_profile or {},
+            "urls": profile.extracted_urls or {},
+            "metadata": {
+                "file_type": profile.file_type,
+                "character_count": len(profile.raw_text) if profile.raw_text else 0,
+                "original_filename": profile.original_filename,
+                "file_size": profile.file_size,
+            },
+            "error": profile.processing_error,
+            "created_at": str(profile.created_at) if profile.created_at else None,
+        },
+    }
+
+
+@router.post("/github/analyze")
+async def analyze_github(
+    force_refresh: bool = False,
+    current_user: User = Depends(get_current_user),
+):
+    from repositories.repositories import ResumeProfileRepository, GitHubProfileRepository, GitHubRepositoryEvidenceRepository
+    from services.github_url_parser import GitHubURLParser
+    from services.github_evidence_service import GitHubEvidenceService
+
+    resume_repo = ResumeProfileRepository()
+    gh_profile_repo = GitHubProfileRepository()
+    gh_evidence_repo = GitHubRepositoryEvidenceRepository()
+
+    resume_profile = resume_repo.get_latest_by_user_id(str(current_user.id))
+    if not resume_profile:
+        validation_error("No resume profile found. Upload a resume first.")
+
+    urls = resume_profile.extracted_urls or {}
+    github_urls = urls.get("github", [])
+    if not github_urls:
+        return {
+            "success": True,
+            "data": {
+                "status": "no_github_profile",
+                "message": "No GitHub profile was detected in the uploaded resume.",
+            },
+        }
+
+    github_url = github_urls[0]
+    parsed = GitHubURLParser.parse(github_url)
+    if not parsed:
+        return {
+            "success": True,
+            "data": {
+                "status": "invalid_github_url",
+                "message": f"Could not extract a valid GitHub username from: {github_url}",
+            },
+        }
+
+    ai_svc = None
+    try:
+        ai_svc = _get_ai_service()
+    except Exception:
+        pass
+
+    service = GitHubEvidenceService(ai_service=ai_svc)
+
+    existing_gh = gh_profile_repo.get_latest_by_user_id(str(current_user.id))
+    if existing_gh and existing_gh.username == parsed["username"] and existing_gh.processing_status == "completed":
+        if not force_refresh:
+            gh_evidence_items = gh_evidence_repo.get_by_profile_id(str(existing_gh.id))
+            return {
+                "success": True,
+                "data": {
+                    "status": "completed",
+                    "username": existing_gh.username,
+                    "profile_url": existing_gh.profile_url,
+                    "avatar_url": existing_gh.avatar_url,
+                    "public_repositories": existing_gh.public_repositories,
+                    "followers": existing_gh.followers,
+                    "following": existing_gh.following,
+                    "repositories_analyzed": len(gh_evidence_items),
+                    "fetched_at": str(existing_gh.fetched_at) if existing_gh.fetched_at else None,
+                    "cached": True,
+                },
+            }
+
+    if existing_gh:
+        gh_profile_id = str(existing_gh.id)
+        gh_profile_repo.update_status(gh_profile_id, "analyzing")
+        gh_evidence_repo.delete_by_profile_id(gh_profile_id)
+    else:
+        new_gh = gh_profile_repo.create(
+            user_id=str(current_user.id),
+            username=parsed["username"],
+            profile_url=parsed["profile_url"],
+            resume_profile_id=str(resume_profile.id),
+        )
+        gh_profile_id = str(new_gh.id)
+        gh_profile_repo.update_status(gh_profile_id, "analyzing")
+
+    try:
+        result = await service.analyze(
+            github_url=github_url,
+            resume_profile_id=str(resume_profile.id),
+            user_id=str(current_user.id),
+            force_refresh=force_refresh,
+        )
+
+        if result.status != "completed":
+            gh_profile_repo.update_status(gh_profile_id, "failed", result.message)
+            return {
+                "success": True,
+                "data": {
+                    "status": result.status,
+                    "message": result.message,
+                },
+            }
+
+        gp = result.github_profile
+        gh_profile_repo.update_result(
+            gh_profile_id,
+            avatar_url=gp.avatar_url if gp else None,
+            public_repositories=gp.public_repositories if gp else 0,
+            followers=gp.followers if gp else 0,
+            following=gp.following if gp else 0,
+            account_created_at=gp.account_created_at if gp else None,
+            fetched_at=datetime.datetime.now(datetime.timezone.utc),
+            processing_status="completed",
+        )
+
+        repo_items = []
+        for repo_ev in result.repositories:
+            repo_items.append({
+                "repository_name": repo_ev.repository.name,
+                "full_name": repo_ev.repository.full_name,
+                "description": repo_ev.repository.description,
+                "repository_url": repo_ev.repository.html_url,
+                "languages": repo_ev.repository.languages,
+                "topics": repo_ev.repository.topics,
+                "readme_text": repo_ev.readme.readme_text if repo_ev.readme else None,
+                "readme_available": 1 if (repo_ev.readme and repo_ev.readme.readme_available) else 0,
+                "stars": repo_ev.repository.stars,
+                "forks": repo_ev.repository.forks,
+                "is_fork": 1 if repo_ev.repository.is_fork else 0,
+                "is_archived": 1 if repo_ev.repository.is_archived else 0,
+                "created_at_github": repo_ev.repository.created_at,
+                "updated_at_github": repo_ev.repository.updated_at,
+                "pushed_at_github": repo_ev.repository.pushed_at,
+                "selection_reasons": repo_ev.repository.selection_reasons,
+                "ai_analysis": repo_ev.ai_analysis.model_dump() if repo_ev.ai_analysis else {},
+                "tech_evidence": [t.model_dump() for t in repo_ev.tech_evidence],
+            })
+        if repo_items:
+            gh_evidence_repo.create_many(gh_profile_id, repo_items)
+
+        return {
+            "success": True,
+            "data": {
+                "status": "completed",
+                "username": gp.username if gp else parsed["username"],
+                "profile_url": gp.profile_url if gp else parsed["profile_url"],
+                "avatar_url": gp.avatar_url if gp else None,
+                "public_repositories": gp.public_repositories if gp else 0,
+                "followers": gp.followers if gp else 0,
+                "following": gp.following if gp else 0,
+                "repositories_analyzed": result.repositories_analyzed,
+                "all_technologies": [t.model_dump() for t in result.all_technologies],
+                "repositories": [
+                    {
+                        "name": r.repository.name,
+                        "full_name": r.repository.full_name,
+                        "description": r.repository.description,
+                        "html_url": r.repository.html_url,
+                        "stars": r.repository.stars,
+                        "forks": r.repository.forks,
+                        "topics": r.repository.topics,
+                        "languages": r.repository.languages,
+                        "has_readme": r.repository.has_readme,
+                        "selection_reasons": r.repository.selection_reasons,
+                        "ai_analysis": r.ai_analysis.model_dump() if r.ai_analysis else None,
+                    }
+                    for r in result.repositories
+                ],
+                "cached": False,
+            },
+        }
+
+    except Exception as e:
+        logger.error("GitHub analysis failed: %s", e)
+        gh_profile_repo.update_status(gh_profile_id, "failed", str(e))
+        internal_error("GitHub analysis failed. Please try again later.")
+
+
+@router.get("/github/profile")
+async def get_github_profile(current_user: User = Depends(get_current_user)):
+    from repositories.repositories import GitHubProfileRepository, GitHubRepositoryEvidenceRepository
+
+    gh_profile_repo = GitHubProfileRepository()
+    gh_evidence_repo = GitHubRepositoryEvidenceRepository()
+
+    profile = gh_profile_repo.get_latest_by_user_id(str(current_user.id))
+    if not profile:
+        return {
+            "success": True,
+            "data": None,
+        }
+
+    repo_evidences = gh_evidence_repo.get_by_profile_id(str(profile.id))
+
+    return {
+        "success": True,
+        "data": {
+            "username": profile.username,
+            "profile_url": profile.profile_url,
+            "avatar_url": profile.avatar_url,
+            "public_repositories": profile.public_repositories,
+            "followers": profile.followers,
+            "following": profile.following,
+            "account_created_at": profile.account_created_at,
+            "fetched_at": str(profile.fetched_at) if profile.fetched_at else None,
+            "repositories_analyzed": len(repo_evidences),
+            "processing_status": profile.processing_status,
+            "processing_error": profile.processing_error,
+            "created_at": str(profile.created_at) if profile.created_at else None,
+            "repositories": [
+                {
+                    "name": r.repository_name,
+                    "full_name": r.full_name,
+                    "description": r.description,
+                    "html_url": r.repository_url,
+                    "stars": r.stars,
+                    "forks": r.forks,
+                    "topics": r.topics or [],
+                    "languages": r.languages or {},
+                    "has_readme": bool(r.readme_available),
+                    "selection_reasons": r.selection_reasons or [],
+                    "ai_analysis": r.ai_analysis or {},
+                }
+                for r in repo_evidences
+            ],
+        },
+    }
+
+
+@router.get("/github/evidence")
+async def get_github_evidence(current_user: User = Depends(get_current_user)):
+    from repositories.repositories import GitHubProfileRepository, GitHubRepositoryEvidenceRepository
+
+    gh_profile_repo = GitHubProfileRepository()
+    gh_evidence_repo = GitHubRepositoryEvidenceRepository()
+
+    profile = gh_profile_repo.get_latest_by_user_id(str(current_user.id))
+    if not profile or profile.processing_status != "completed":
+        return {
+            "success": True,
+            "data": {
+                "evidence": [],
+                "repositories_analyzed": 0,
+            },
+        }
+
+    repo_evidences = gh_evidence_repo.get_by_profile_id(str(profile.id))
+
+    all_evidence = []
+    for r in repo_evidences:
+        if r.tech_evidence:
+            all_evidence.extend(r.tech_evidence)
+
+    deduped = {}
+    for ev in all_evidence:
+        if isinstance(ev, dict):
+            key = f"{ev.get('technology', '')}:{ev.get('evidence_type', '')}:{ev.get('repository', '')}"
+            if key not in deduped:
+                deduped[key] = ev
+
+    return {
+        "success": True,
+        "data": {
+            "evidence": list(deduped.values()),
+            "repositories_analyzed": len(repo_evidences),
+        },
+    }
+
+
 @router.post("/roadmap/{roadmap_id}/step/{step_index}/toggle")
 async def toggle_roadmap_step(
     roadmap_id: str, 
@@ -555,7 +957,7 @@ async def toggle_roadmap_step(
     if not roadmap:
         roadmap = db.query(Roadmap).filter(Roadmap.id == roadmap_id).first()
         if not roadmap:
-            raise HTTPException(status_code=404, detail="Roadmap not found")
+            not_found("Roadmap not found")
 
     assessment_repo = AssessmentRepository()
     user_assessments = assessment_repo.get_by_user_id(str(current_user.id))
@@ -565,12 +967,12 @@ async def toggle_roadmap_step(
         user_assessment_ids = {str(user_assessments.id)} if user_assessments else set()
     
     if str(roadmap.assessment_id) not in user_assessment_ids and str(roadmap.id) not in user_assessment_ids:
-        raise HTTPException(status_code=403, detail="You do not have permission to modify this roadmap")
+        forbidden("You do not have permission to modify this roadmap")
 
     steps = _normalize_roadmap_steps(list(roadmap.steps))
     
     if step_index < 0 or step_index >= len(steps):
-        raise HTTPException(status_code=400, detail="Invalid step index")
+        validation_error("Invalid step index")
         
     current_status = steps[step_index].get("status", "available")
     
@@ -734,7 +1136,7 @@ async def get_career_readiness(current_user: User = Depends(get_current_user)):
         db_assess = db_assess[0] if db_assess else None
         
     if not db_assess:
-        raise HTTPException(status_code=404, detail="No assessment found")
+        not_found("No assessment found")
         
     # Reconstruct profile
     matched = db_assess.matched_skills or []
@@ -768,7 +1170,7 @@ async def get_recommendations(current_user: User = Depends(get_current_user)):
         db_assess = db_assess[0] if db_assess else None
         
     if not db_assess:
-        raise HTTPException(status_code=404, detail="No assessment found")
+        not_found("No assessment found")
         
     matched = db_assess.matched_skills or []
     profile = CyberProfile(
@@ -806,7 +1208,7 @@ async def update_progress(request: dict, current_user: User = Depends(get_curren
         db_assess = db_assess[0] if db_assess else None
         
     if not db_assess:
-        raise HTTPException(status_code=404, detail="No assessment found")
+        not_found("No assessment found")
         
     matched = db_assess.matched_skills or []
     profile = CyberProfile(
@@ -843,4 +1245,388 @@ async def update_progress(request: dict, current_user: User = Depends(get_curren
     return {
         "success": True,
         "data": result
+    }
+
+
+@router.post("/skills/evidence/analyze")
+async def analyze_skill_evidence(
+    force_refresh: bool = False,
+    current_user: User = Depends(get_current_user),
+):
+    from repositories.repositories import SkillEvidenceRepository, UserSkillProfileRepository
+    from services.skill_evidence_orchestrator import skill_evidence_orchestrator
+    import datetime
+
+    evidence_repo = SkillEvidenceRepository()
+    profile_repo = UserSkillProfileRepository()
+
+    existing_profile = profile_repo.get_by_user_id(str(current_user.id))
+    if existing_profile and existing_profile.analysis_status == "completed" and not force_refresh:
+        existing_evidence = evidence_repo.get_by_user_id(str(current_user.id))
+        return {
+            "success": True,
+            "data": {
+                "status": "completed",
+                "total_skills": existing_profile.total_skills,
+                "high_confidence": existing_profile.high_confidence_count,
+                "medium_confidence": existing_profile.medium_confidence_count,
+                "low_confidence": existing_profile.low_confidence_count,
+                "minimal_confidence": existing_profile.minimal_confidence_count,
+                "average_confidence": existing_profile.average_confidence,
+                "analyzed_at": str(existing_profile.analyzed_at) if existing_profile.analyzed_at else None,
+                "cached": True,
+            },
+        }
+
+    if existing_profile:
+        profile_id = str(existing_profile.id)
+        profile_repo.update(profile_id, analysis_status="analyzing")
+        evidence_repo.delete_by_user_id(str(current_user.id))
+    else:
+        new_profile = profile_repo.create(
+            user_id=str(current_user.id),
+            analysis_status="analyzing",
+        )
+        profile_id = str(new_profile.id)
+
+    try:
+        results = skill_evidence_orchestrator.analyze_user(str(current_user.id))
+
+        evidence_items = []
+        total_conf = 0.0
+        high = 0
+        medium = 0
+        low = 0
+        minimal = 0
+
+        for skill_name, agg in results.items():
+            evidence_items.append({
+                "skill_name": agg.skill_name,
+                "skill_id": agg.skill_id,
+                "category": agg.category,
+                "confidence": int(agg.confidence * 100),
+                "confidence_level": agg.confidence_level,
+                "sources": [
+                    {
+                        "source": s.get("source", ""),
+                        "raw_confidence": s.get("raw_confidence", 0),
+                        "effective_confidence": s.get("effective_confidence", 0),
+                        "weight": s.get("weight", 0),
+                        "contribution": s.get("contribution", 0),
+                        "repository": s.get("repository"),
+                        "evidence_text": s.get("evidence_text"),
+                        "details": s.get("details", {}),
+                    }
+                    for s in (agg.sources if isinstance(agg.sources, list) else [])
+                ],
+                "evidence_count": agg.evidence_count,
+                "strongest_source": agg.strongest_source,
+                "last_updated": agg.last_updated,
+            })
+            total_conf += agg.confidence
+            if agg.confidence_level == "high":
+                high += 1
+            elif agg.confidence_level == "medium":
+                medium += 1
+            elif agg.confidence_level == "low":
+                low += 1
+            else:
+                minimal += 1
+
+        if evidence_items:
+            evidence_repo.upsert_many(str(current_user.id), evidence_items)
+
+        avg_conf = int((total_conf / len(results) * 100)) if results else 0
+        now = datetime.datetime.now(datetime.timezone.utc)
+
+        profile_repo.update(
+            profile_id,
+            total_skills=len(results),
+            high_confidence_count=high,
+            medium_confidence_count=medium,
+            low_confidence_count=low,
+            minimal_confidence_count=minimal,
+            average_confidence=avg_conf,
+            analysis_status="completed",
+            analyzed_at=now,
+        )
+
+        return {
+            "success": True,
+            "data": {
+                "status": "completed",
+                "total_skills": len(results),
+                "high_confidence": high,
+                "medium_confidence": medium,
+                "low_confidence": low,
+                "minimal_confidence": minimal,
+                "average_confidence": avg_conf,
+                "analyzed_at": str(now),
+                "cached": False,
+            },
+        }
+
+    except Exception as e:
+        logger.error("Skill evidence analysis failed: %s", e)
+        profile_repo.update(profile_id, analysis_status="failed", analysis_error=str(e))
+        internal_error("Skill evidence analysis failed. Please try again later.")
+
+
+@router.get("/skills/evidence")
+async def get_skill_evidence(current_user: User = Depends(get_current_user)):
+    from repositories.repositories import SkillEvidenceRepository, UserSkillProfileRepository
+
+    evidence_repo = SkillEvidenceRepository()
+    profile_repo = UserSkillProfileRepository()
+
+    profile = profile_repo.get_by_user_id(str(current_user.id))
+    if not profile or profile.analysis_status != "completed":
+        return {
+            "success": True,
+            "data": {
+                "evidence": [],
+                "total_skills": 0,
+                "analysis_status": profile.analysis_status if profile else "pending",
+            },
+        }
+
+    evidence_items = evidence_repo.get_by_user_id(str(current_user.id))
+
+    return {
+        "success": True,
+        "data": {
+            "evidence": [
+                {
+                    "skill_id": e.skill_id,
+                    "skill_name": e.skill_name,
+                    "category": e.category,
+                    "confidence": e.confidence,
+                    "confidence_level": e.confidence_level,
+                    "sources": e.sources or [],
+                    "evidence_count": e.evidence_count,
+                    "strongest_source": e.strongest_source,
+                    "last_updated": e.last_updated,
+                }
+                for e in evidence_items
+            ],
+            "total_skills": profile.total_skills,
+            "high_confidence": profile.high_confidence_count,
+            "medium_confidence": profile.medium_confidence_count,
+            "low_confidence": profile.low_confidence_count,
+            "minimal_confidence": profile.minimal_confidence_count,
+            "average_confidence": profile.average_confidence,
+            "analysis_status": profile.analysis_status,
+        },
+    }
+
+
+@router.get("/skills/evidence/{skill_id}")
+async def get_skill_evidence_detail(
+    skill_id: str,
+    current_user: User = Depends(get_current_user),
+):
+    from repositories.repositories import SkillEvidenceRepository
+
+    evidence_repo = SkillEvidenceRepository()
+    evidence = evidence_repo.get_by_user_and_skill(str(current_user.id), skill_id)
+
+    if not evidence:
+        not_found("Skill evidence not found")
+
+    return {
+        "success": True,
+        "data": {
+            "skill_id": evidence.skill_id,
+            "skill_name": evidence.skill_name,
+            "category": evidence.category,
+            "confidence": evidence.confidence,
+            "confidence_level": evidence.confidence_level,
+            "sources": evidence.sources or [],
+            "evidence_count": evidence.evidence_count,
+            "strongest_source": evidence.strongest_source,
+            "last_updated": evidence.last_updated,
+        },
+    }
+
+
+@router.get("/career/roles")
+async def list_career_roles(
+    current_user: User = Depends(get_current_user),
+):
+    from services.role_adapter import RoleAdapter
+
+    adapter = RoleAdapter()
+    roles = adapter.get_all_roles_enriched()
+
+    items = []
+    for role in roles:
+        items.append({
+            "role_id": role["role_id"],
+            "role_name": role["role_name"],
+            "description": role["description"],
+            "required_skills_count": len(role["required_skills"]),
+            "optional_skills_count": len(role["optional_skills"]),
+            "recommended_certifications": role["recommended_certifications"],
+            "estimated_duration": role.get("estimated_duration"),
+        })
+
+    return {
+        "success": True,
+        "data": {"roles": items, "total": len(items)},
+    }
+
+
+@router.get("/career/roles/{role_id}")
+async def get_career_role_detail(
+    role_id: str,
+    current_user: User = Depends(get_current_user),
+):
+    from services.role_adapter import RoleAdapter
+
+    adapter = RoleAdapter()
+    role = adapter.get_role_enriched(role_id)
+
+    if not role:
+        not_found(f"Role '{role_id}' not found")
+
+    return {
+        "success": True,
+        "data": role,
+    }
+
+
+@router.post("/career/role/select")
+async def select_target_role(
+    request: dict,
+    current_user: User = Depends(get_current_user),
+):
+    from services.role_adapter import RoleAdapter
+
+    role_id = request.get("role_id")
+    if not role_id:
+        validation_error("role_id is required")
+
+    adapter = RoleAdapter()
+    role = adapter.get_role_enriched(role_id)
+
+    if not role:
+        not_found(f"Role '{role_id}' not found")
+
+    return {
+        "success": True,
+        "data": {
+            "role_id": role_id,
+            "role_name": role["role_name"],
+            "message": f"Target role set to {role['role_name']}",
+        },
+    }
+
+
+@router.post("/career/gap-analysis")
+async def run_gap_analysis(
+    request: dict,
+    current_user: User = Depends(get_current_user),
+):
+    from services.role_gap_analysis_service import RoleGapAnalysisService
+    from services.gap_analysis_service import GapAnalysisService
+    from services.role_adapter import RoleAdapter
+    from app.ai.orchestrator import AIOrchestrator
+    from app.ai.gap_explanation import GapExplanationService
+
+    role_id = request.get("role_id")
+    force_refresh = request.get("force_refresh", False)
+
+    if not role_id:
+        validation_error("role_id is required")
+
+    user_id = str(current_user.id)
+
+    role_adapter = RoleAdapter()
+    gap_service = GapAnalysisService(role_adapter=role_adapter)
+    analysis_svc = RoleGapAnalysisService(
+        gap_analysis_service=gap_service,
+        role_adapter=role_adapter,
+    )
+
+    if not force_refresh:
+        saved = analysis_svc.get_saved_analysis(user_id)
+        if saved and saved.get("role_id") == role_id:
+            return {
+                "success": True,
+                "data": saved,
+                "cached": True,
+            }
+
+    result = analysis_svc.analyze_role_gap(user_id, role_id)
+
+    if "error" in result:
+        not_found(result["error"])
+
+    try:
+        orchestrator = AIOrchestrator(provider_name="gemini", fallback_provider_name="mistral")
+        if orchestrator.is_configured():
+            explainer = GapExplanationService(orchestrator=orchestrator)
+            explanation = explainer.generate_explanation(
+                role_name=result["role_name"],
+                readiness_score=result["readiness_score"],
+                skill_gaps=result["skill_gaps"],
+                next_skill=result.get("recommended_next_skill"),
+            )
+            if explanation:
+                result["ai_explanation"] = explanation.get("summary", "")
+    except Exception as e:
+        logger.warning("AI explanation generation failed: %s", e)
+
+    analysis_svc.save_analysis(user_id, result)
+
+    return {
+        "success": True,
+        "data": result,
+        "cached": False,
+    }
+
+
+@router.get("/career/gap-analysis")
+async def get_gap_analysis(
+    current_user: User = Depends(get_current_user),
+):
+    from services.role_gap_analysis_service import RoleGapAnalysisService
+
+    user_id = str(current_user.id)
+    analysis_svc = RoleGapAnalysisService()
+
+    saved = analysis_svc.get_saved_analysis(user_id)
+    if not saved:
+        return {
+            "success": True,
+            "data": None,
+            "message": "No role analysis found. Select a target role first.",
+        }
+
+    return {
+        "success": True,
+        "data": saved,
+    }
+
+
+@router.get("/career/next-skill")
+async def get_next_skill_recommendation(
+    current_user: User = Depends(get_current_user),
+):
+    from services.role_gap_analysis_service import RoleGapAnalysisService
+
+    user_id = str(current_user.id)
+    analysis_svc = RoleGapAnalysisService()
+
+    next_skill = analysis_svc.get_next_skill(user_id)
+    if not next_skill:
+        return {
+            "success": True,
+            "data": None,
+            "message": "No recommendation available. Run a gap analysis first.",
+        }
+
+    return {
+        "success": True,
+        "data": next_skill,
     }

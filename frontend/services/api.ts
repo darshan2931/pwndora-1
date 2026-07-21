@@ -107,7 +107,124 @@ export const api = {
     });
     return handleResponse(res);
   },
-  
+
+  analyzeResumeProfile: async (formData: FormData) => {
+    const res = await fetch(`${API_BASE}/resume/profile/analyze`, {
+      method: 'POST',
+      headers: getHeaders(true),
+      body: formData,
+    });
+    return handleResponse(res);
+  },
+
+  getResumeProfile: async () => {
+    const res = await fetch(`${API_BASE}/resume/profile`, {
+      method: 'GET',
+      headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  analyzeGithub: async (forceRefresh = false) => {
+    const params = forceRefresh ? '?force_refresh=true' : '';
+    const res = await fetch(`${API_BASE}/github/analyze${params}`, {
+      method: 'POST',
+      headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  getGithubProfile: async () => {
+    const res = await fetch(`${API_BASE}/github/profile`, {
+      method: 'GET',
+      headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  getGithubEvidence: async () => {
+    const res = await fetch(`${API_BASE}/github/evidence`, {
+      method: 'GET',
+      headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  analyzeSkillEvidence: async (forceRefresh = false) => {
+    const params = forceRefresh ? '?force_refresh=true' : '';
+    const res = await fetch(`${API_BASE}/skills/evidence/analyze${params}`, {
+      method: 'POST',
+      headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  getSkillEvidence: async () => {
+    const res = await fetch(`${API_BASE}/skills/evidence`, {
+      method: 'GET',
+      headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  getSkillEvidenceDetail: async (skillId: string) => {
+    const res = await fetch(`${API_BASE}/skills/evidence/${encodeURIComponent(skillId)}`, {
+      method: 'GET',
+      headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  getCareerRoles: async () => {
+    const res = await fetch(`${API_BASE}/career/roles`, {
+      method: 'GET',
+      headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  getCareerRoleDetail: async (roleId: string) => {
+    const res = await fetch(`${API_BASE}/career/roles/${encodeURIComponent(roleId)}`, {
+      method: 'GET',
+      headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  selectTargetRole: async (roleId: string) => {
+    const res = await fetch(`${API_BASE}/career/role/select`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ role_id: roleId }),
+    });
+    return handleResponse(res);
+  },
+
+  runGapAnalysis: async (roleId: string, forceRefresh = false) => {
+    const res = await fetch(`${API_BASE}/career/gap-analysis`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ role_id: roleId, force_refresh: forceRefresh }),
+    });
+    return handleResponse(res);
+  },
+
+  getGapAnalysis: async () => {
+    const res = await fetch(`${API_BASE}/career/gap-analysis`, {
+      method: 'GET',
+      headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  getNextSkill: async () => {
+    const res = await fetch(`${API_BASE}/career/next-skill`, {
+      method: 'GET',
+      headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
+
   logout: () => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('token');

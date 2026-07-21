@@ -6,19 +6,17 @@ from typing import Optional
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
-# pyrefly: ignore [missing-import]
-from app.ai.ai_service import AIService
-from core.middleware import AccessLogMiddleware
-# pyrefly: ignore [missing-import]
-from utils.middleware.rate_limiter import RateLimitMiddleware
+from core.logging_config import setup_logging
+
+setup_logging(level=os.getenv("LOG_LEVEL", "INFO"))
+
+from app.ai.ai_service import AIService  # noqa: E402
+from core.middleware import AccessLogMiddleware  # noqa: E402
+from utils.middleware.rate_limiter import RateLimitMiddleware  # noqa: E402
 
 load_dotenv()
-
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-)
 
 logger = logging.getLogger(__name__)
 
@@ -36,19 +34,22 @@ async def lifespan(app: FastAPI):
     global _ai_service
 
     from database.session import engine, Base
-    from models.sqlalchemy_models import User, CyberProfile, Assessment, Roadmap, ChatMemory, ChatHistory, ResumeAnalysis, ResumeReview, Skill, Project  # noqa: F401
+    from models.sqlalchemy_models import (  # noqa: F401
+        User, CyberProfile, Assessment, Roadmap, ChatMemory, ChatHistory,
+        ResumeAnalysis, ResumeReview, Skill, Project, ResumeProfile,
+        GitHubProfile, GitHubRepositoryEvidence, SkillEvidence,
+        UserSkillProfile, CareerRoleAnalysis,
+    )
     Base.metadata.create_all(bind=engine)
     logger.info("Database tables verified/created.")
 
-    # Initialize new AI Intelligence Layer
-    # Defaults to 'gemini' provider, falls back to 'mistral'
     _ai_service = AIService(provider_name="gemini")
-    
+
     if _ai_service.is_configured():
         logger.info("AI Intelligence Layer initialized successfully.")
     else:
         logger.warning("No AI API keys found. Running in MOCK mode.")
-        
+
     yield
     _ai_service = None
 
@@ -58,6 +59,9 @@ app = FastAPI(
     description="AI-powered Cybersecurity Career Intelligence Platform",
     version="0.1.0",
     lifespan=lifespan,
+    docs_url="/api/docs",
+    redoc_url="/api/redoc",
+    openapi_url="/api/openapi.json",
 )
 
 _cors_origins = [
@@ -74,11 +78,9 @@ app.add_middleware(
     allow_headers=["Authorization", "Content-Type"],
 )
 app.add_middleware(AccessLogMiddleware)
-
 app.add_middleware(RateLimitMiddleware, requests_per_minute=60, burst=10)
 
-# pyrefly: ignore [missing-import]
-from app.api.routes import router
+from app.api.routes import router  # noqa: E402
 
 app.include_router(router, prefix="/api/v1")
 
@@ -87,12 +89,26 @@ app.include_router(router, prefix="/api/v1")
 async def global_exception_handler(request, exc):
     from fastapi.exceptions import HTTPException as FastAPIHTTPException
     if isinstance(exc, FastAPIHTTPException):
-        raise exc
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={
+                "success": False,
+                "error": {
+                    "code": "HTTP_ERROR",
+                    "message": str(exc.detail) if hasattr(exc, "detail") else str(exc),
+                },
+            },
+        )
     logger.error("Unhandled exception: %s", exc, exc_info=True)
-    from fastapi.responses import JSONResponse
     return JSONResponse(
         status_code=500,
-        content={"success": False, "message": "Internal server error"},
+        content={
+            "success": False,
+            "error": {
+                "code": "INTERNAL_ERROR",
+                "message": "Internal server error",
+            },
+        },
     )
 
 
