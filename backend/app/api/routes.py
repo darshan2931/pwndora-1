@@ -75,6 +75,28 @@ RESOURCE_ENRICHMENT = {
 }
 
 
+CERT_KEYWORDS = {
+    "comptia", "security+", "cysa+", "pentest+", "cyssa", "ceh", "oscp", "oswe",
+    "gcih", "gcfa", "grem", "ctia", "gcti", "cisa", "crisc", "cissp", "ccsp",
+    "csslp", "ejpt", "pnpt", "btl1", "ccsk", "aws security", "azure security",
+    "certified", "certification", "credential",
+}
+
+
+def _is_certification_evidence(evidence) -> bool:
+    """Check if a SkillEvidence record represents a certification."""
+    skill_lower = (evidence.skill_name or "").lower()
+    if any(kw in skill_lower for kw in CERT_KEYWORDS):
+        return True
+    if hasattr(evidence, 'sources') and evidence.sources:
+        for src in evidence.sources:
+            if isinstance(src, dict):
+                src_type = (src.get("source") or "").lower()
+                if "certification" in src_type or "cert" in src_type:
+                    return True
+    return False
+
+
 def _enrich_resource(r: dict, step_idx: int, res_idx: int) -> dict:
     """Enrich a resource with proper URL, type, and free status from the enrichment map."""
     title = r.get("title", "")
@@ -1629,4 +1651,871 @@ async def get_next_skill_recommendation(
     return {
         "success": True,
         "data": next_skill,
+    }
+
+
+@router.post("/roadmap/generate")
+async def generate_roadmap(
+    request: dict,
+    current_user: User = Depends(get_current_user),
+):
+    """Generate a personalized roadmap for a target role."""
+    from services.personalized_roadmap_service import personalized_roadmap_service
+    from app.ai.roadmap_explanation import roadmap_explanation_service
+
+    role_id = request.get("role_id")
+    assessment_id = request.get("assessment_id")
+    weekly_hours = request.get("weekly_hours", 10)
+    learning_style = request.get("learning_style", "hands-on")
+
+    if not role_id:
+        validation_error("role_id is required")
+    if not assessment_id:
+        validation_error("assessment_id is required")
+
+    role_id = sanitize_string(role_id, max_length=100)
+    assessment_id = sanitize_string(assessment_id, max_length=100)
+
+    result = personalized_roadmap_service.generate_roadmap(
+        user_id=str(current_user.id),
+        assessment_id=assessment_id,
+        role_id=role_id,
+        weekly_hours=weekly_hours,
+        learning_style=learning_style,
+        generation_reason="initial",
+    )
+
+    if "error" in result:
+        validation_error(result["error"])
+
+    # Try to generate AI explanation
+    try:
+        ai_svc = None
+        try:
+            ai_svc = _get_ai_service()
+        except RuntimeError:
+            pass
+
+        if ai_svc:
+            from app.ai.orchestrator import AIOrchestrator
+            orchestrator = AIOrchestrator(provider_name="gemini", fallback_provider_name="mistral")
+            if orchestrator.is_configured():
+                roadmap_explanation_service._orchestrator = orchestrator
+                skill_confidences = personalized_roadmap_service._load_skill_confidences(str(current_user.id))
+                explanation = roadmap_explanation_service.generate_explanation(
+                    role_name=result.get("role_name", role_id),
+                    readiness_score=result.get("readiness_score", 0) / 100.0,
+                    nodes=result.get("nodes", []),
+                    phases=result.get("phases", []),
+                    skill_confidences=skill_confidences,
+                )
+                if explanation:
+                    result["ai_explanation"] = explanation
+    except Exception as e:
+        logger.warning("AI roadmap explanation failed: %s", e)
+
+    return {"success": True, "data": result}
+
+
+@router.post("/roadmap/regenerate")
+async def regenerate_roadmap(
+    request: dict,
+    current_user: User = Depends(get_current_user),
+):
+    """Regenerate roadmap when new evidence appears. Preserves completed progress."""
+    from services.personalized_roadmap_service import personalized_roadmap_service
+
+    role_id = request.get("role_id")
+    assessment_id = request.get("assessment_id")
+    weekly_hours = request.get("weekly_hours", 10)
+    learning_style = request.get("learning_style", "hands-on")
+    preserve_completed = request.get("preserve_completed", True)
+
+    if not role_id:
+        validation_error("role_id is required")
+    if not assessment_id:
+        validation_error("assessment_id is required")
+
+    role_id = sanitize_string(role_id, max_length=100)
+    assessment_id = sanitize_string(assessment_id, max_length=100)
+
+    result = personalized_roadmap_service.regenerate_roadmap(
+        user_id=str(current_user.id),
+        assessment_id=assessment_id,
+        role_id=role_id,
+        weekly_hours=weekly_hours,
+        learning_style=learning_style,
+        preserve_completed=preserve_completed,
+    )
+
+    if "error" in result:
+        validation_error(result["error"])
+
+    return {"success": True, "data": result}
+
+
+@router.get("/roadmap/current")
+async def get_current_roadmap(
+    current_user: User = Depends(get_current_user),
+):
+    """Get the user's current/latest roadmap."""
+    from services.personalized_roadmap_service import personalized_roadmap_service
+
+    roadmap = personalized_roadmap_service.get_user_roadmap(str(current_user.id))
+    if not roadmap:
+        return {
+            "success": True,
+            "data": None,
+            "message": "No roadmap found. Generate one first.",
+        }
+
+    return {"success": True, "data": roadmap}
+
+
+@router.get("/roadmap/{roadmap_id}")
+async def get_roadmap_by_id(
+    roadmap_id: str,
+    current_user: User = Depends(get_current_user),
+):
+    """Get a specific roadmap by ID."""
+    from services.personalized_roadmap_service import personalized_roadmap_service
+    from repositories.repositories import RoadmapRepository
+
+    roadmap_repo = RoadmapRepository()
+    from database.session import SessionLocal
+    from models.sqlalchemy_models import Roadmap
+
+    db = SessionLocal()
+    try:
+        roadmap = db.query(Roadmap).filter(Roadmap.id == roadmap_id).first()
+        if not roadmap:
+            not_found("Roadmap not found")
+
+        if str(roadmap.user_id) != str(current_user.id):
+            forbidden("Not authorized to view this roadmap")
+
+        return {
+            "success": True,
+            "data": {
+                "roadmap_id": str(roadmap.id),
+                "version": roadmap.version,
+                "user_id": str(roadmap.user_id),
+                "assessment_id": str(roadmap.assessment_id),
+                "nodes": roadmap.steps or [],
+                "phases": roadmap.phases or [],
+                "total_hours": roadmap.total_hours,
+                "estimated_weeks": roadmap.estimated_weeks,
+                "readiness_score": roadmap.readiness_score_at_creation,
+                "generation_reason": roadmap.generation_reason,
+                "created_at": roadmap.created_at.isoformat() if roadmap.created_at else None,
+            },
+        }
+    finally:
+        db.close()
+
+
+@router.post("/roadmap/{roadmap_id}/node/{node_index}/toggle")
+async def toggle_roadmap_node(
+    roadmap_id: str,
+    node_index: int,
+    current_user: User = Depends(get_current_user),
+):
+    """Toggle a roadmap node's status."""
+    from services.personalized_roadmap_service import personalized_roadmap_service
+
+    roadmap_id = sanitize_string(roadmap_id, max_length=100)
+
+    result = personalized_roadmap_service.toggle_node_status(roadmap_id, node_index)
+
+    if "error" in result:
+        validation_error(result["error"])
+
+    return {"success": True, "data": result}
+
+
+# ─── Phase 6: Career Evidence Event Loop ──────────────────────────────────────
+
+@router.post("/career/events")
+async def create_career_event(
+    event_type: str = Form(...),
+    event_data: str = Form("{}"),
+    idempotency_key: str = Form(None),
+    current_user: User = Depends(get_current_user),
+):
+    """Create a career evidence event for processing."""
+    import json
+    from services.career_progress_service import CareerProgressService
+
+    user_id = str(current_user.id)
+
+    try:
+        parsed_data = json.loads(event_data) if event_data else {}
+    except json.JSONDecodeError:
+        validation_error("event_data must be valid JSON")
+
+    valid_event_types = {
+        "roadmap_skill_completed", "roadmap_project_completed",
+        "roadmap_certification_completed", "github_repository_linked",
+        "github_repository_analyzed", "github_profile_reanalyzed",
+        "assessment_completed", "resume_uploaded",
+        "certification_added", "experience_added",
+    }
+    if event_type not in valid_event_types:
+        validation_error(f"Invalid event_type. Must be one of: {', '.join(sorted(valid_event_types))}")
+
+    service = CareerProgressService()
+    result = service.process_event(
+        user_id=user_id,
+        event_type=event_type,
+        event_data=parsed_data,
+        idempotency_key=idempotency_key,
+    )
+
+    return {"success": True, "data": result}
+
+
+@router.post("/career/events/{event_id}/process")
+async def process_career_event(
+    event_id: str,
+    current_user: User = Depends(get_current_user),
+):
+    """Manually trigger processing of a pending career event."""
+    from services.evidence_event_processor import EvidenceEventProcessor
+
+    processor = EvidenceEventProcessor()
+    result = processor.process_event(event_id)
+
+    if not result.get("success"):
+        validation_error(result.get("error", "Failed to process event"))
+
+    return {"success": True, "data": result}
+
+
+@router.get("/career/events/{event_id}")
+async def get_career_event_status(
+    event_id: str,
+    current_user: User = Depends(get_current_user),
+):
+    """Get the status and changes from a career event."""
+    from services.career_progress_service import CareerProgressService
+
+    service = CareerProgressService()
+    result = service.get_event_status(event_id)
+
+    if not result:
+        not_found("Event not found")
+
+    return {"success": True, "data": result}
+
+
+@router.get("/career/timeline")
+async def get_career_timeline(
+    limit: int = 20,
+    current_user: User = Depends(get_current_user),
+):
+    """Get the career progress timeline (recent changes)."""
+    from services.career_progress_service import CareerProgressService
+
+    service = CareerProgressService()
+    timeline = service.get_timeline(str(current_user.id), limit=min(limit, 100))
+
+    return {"success": True, "data": {"timeline": timeline, "count": len(timeline)}}
+
+
+@router.get("/career/progress")
+async def get_career_progress(
+    current_user: User = Depends(get_current_user),
+):
+    """Get overall career progress summary including skills, readiness, and events."""
+    from services.career_progress_service import CareerProgressService
+
+    service = CareerProgressService()
+    summary = service.get_progress_summary(str(current_user.id))
+
+    return {"success": True, "data": summary}
+
+
+@router.get("/career/changes")
+async def get_career_changes(
+    limit: int = 50,
+    current_user: User = Depends(get_current_user),
+):
+    """Get full career change history."""
+    from services.career_progress_service import CareerProgressService
+
+    service = CareerProgressService()
+    changes = service.get_change_history(str(current_user.id), limit=min(limit, 200))
+
+    return {"success": True, "data": {"changes": changes, "count": len(changes)}}
+
+
+@router.post("/github/repositories/{repo_id}/reanalyze")
+async def reanalyze_github_repository(
+    repo_id: str,
+    current_user: User = Depends(get_current_user),
+):
+    """Reanalyze a GitHub repository and trigger an evidence event."""
+    from repositories.repositories import GitHubRepositoryEvidenceRepository
+    from services.career_progress_service import CareerProgressService
+    from database.session import SessionLocal
+    from models.sqlalchemy_models import GitHubRepositoryEvidence
+
+    user_id = str(current_user.id)
+
+    db = SessionLocal()
+    try:
+        repo = db.query(GitHubRepositoryEvidence).filter(GitHubRepositoryEvidence.id == repo_id).first()
+        if not repo:
+            not_found("Repository not found")
+
+        event_data = {
+            "repository_name": repo.repository_name,
+            "repository_url": repo.repository_url,
+            "languages": repo.languages or {},
+            "topics": repo.topics or [],
+        }
+
+        service = CareerProgressService()
+        result = service.process_event(
+            user_id=user_id,
+            event_type="github_repository_analyzed",
+            event_data=event_data,
+            idempotency_key=f"github_repo_reanalyze_{repo_id}",
+        )
+
+        return {"success": True, "data": result}
+    finally:
+        db.close()
+
+
+@router.get("/career/versions")
+async def get_roadmap_versions(
+    limit: int = 10,
+    current_user: User = Depends(get_current_user),
+):
+    """Get roadmap version history."""
+    from services.adaptive_roadmap import AdaptiveRoadmapService
+
+    service = AdaptiveRoadmapService()
+    versions = service.get_version_history(str(current_user.id), limit=min(limit, 50))
+
+    return {"success": True, "data": {"versions": versions, "count": len(versions)}}
+
+
+# ─── Phase 7: Enhanced AI Mentor ─────────────────────────────────────────────
+
+
+@router.post("/mentor/generate")
+async def generate_mentor_response(
+    request: dict,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Phase 7: Generate an evidence-based mentor response with structured output."""
+    import json
+    from services.career_intelligence_context import CareerIntelligenceContextBuilder
+    from services.mentor_modes import detect_mode, get_mode_description
+    from services.structured_response import StructuredResponseParser
+    from services.prompt_injection import PromptInjectionGuard
+
+    question = sanitize_string(request.get("question", ""), max_length=500)
+    session_id = sanitize_string(request.get("session_id", ""), max_length=100) or "default"
+    requested_mode = sanitize_string(request.get("mode", ""), max_length=50)
+
+    if not question:
+        validation_error("Question is required")
+
+    guard = PromptInjectionGuard()
+    if guard.is_injection_attempt(question):
+        validation_error("Your message was flagged as a potential prompt injection attempt.")
+
+    ai_svc = None
+    try:
+        ai_svc = _get_ai_service()
+    except RuntimeError:
+        ai_unavailable("AI Mentor service is not configured.")
+
+    context_builder = CareerIntelligenceContextBuilder()
+    context = context_builder.build_context_for_question(str(current_user.id), question)
+
+    if requested_mode:
+        from services.mentor_modes import MentorMode
+        try:
+            mode = MentorMode(requested_mode)
+        except ValueError:
+            mode = detect_mode(question)
+    else:
+        mode = detect_mode(question)
+
+    mode_description = get_mode_description(mode)
+
+    raw_response = await ai_svc.generate_mentor_response_v2(
+        question=question,
+        context=context,
+        mode=mode.value,
+        mode_description=mode_description,
+        session_id=session_id,
+    )
+
+    parsed = StructuredResponseParser.parse_ai_response(raw_response, mode=mode.value)
+
+    return {
+        "success": True,
+        "answer": parsed.answer,
+        "confidence": parsed.confidence,
+        "sources": parsed.sources,
+        "recommended_actions": parsed.recommended_actions,
+        "warnings": parsed.warnings,
+        "mode": mode.value,
+    }
+
+
+@router.post("/mentor/daily-briefing")
+async def generate_daily_briefing(
+    current_user: User = Depends(get_current_user),
+):
+    """Phase 7: Generate a personalized daily career briefing."""
+    from services.career_intelligence_context import CareerIntelligenceContextBuilder
+    from services.structured_response import StructuredResponseParser
+
+    context_builder = CareerIntelligenceContextBuilder()
+    context = context_builder.build_daily_briefing_context(str(current_user.id))
+
+    ai_svc = None
+    try:
+        ai_svc = _get_ai_service()
+    except RuntimeError:
+        ai_unavailable("AI Mentor service is not configured.")
+
+    raw = await ai_svc.generate_with_template(
+        template_name="daily_briefing",
+        context=context,
+        question="Generate my daily career briefing.",
+    )
+
+    parsed = StructuredResponseParser.parse_ai_response(raw, mode="daily_briefing")
+
+    return {
+        "success": True,
+        "briefing": parsed.answer,
+        "mode": "daily_briefing",
+    }
+
+
+@router.post("/mentor/roadmap-explanation")
+async def generate_roadmap_explanation(
+    current_user: User = Depends(get_current_user),
+):
+    """Phase 7: Explain the personalized roadmap structure."""
+    from services.career_intelligence_context import CareerIntelligenceContextBuilder
+    from services.structured_response import StructuredResponseParser
+
+    context_builder = CareerIntelligenceContextBuilder()
+    context = context_builder.build_roadmap_explanation_context(str(current_user.id))
+
+    ai_svc = None
+    try:
+        ai_svc = _get_ai_service()
+    except RuntimeError:
+        ai_unavailable("AI Mentor service is not configured.")
+
+    raw = await ai_svc.generate_with_template(
+        template_name="explain_roadmap",
+        context=context,
+        question="Explain why my roadmap is structured this way.",
+    )
+
+    parsed = StructuredResponseParser.parse_ai_response(raw, mode="roadmap_explanation")
+
+    return {
+        "success": True,
+        "explanation": parsed.answer,
+        "mode": "roadmap_explanation",
+    }
+
+
+@router.post("/mentor/skill-explanation")
+async def generate_skill_explanation(
+    request: dict,
+    current_user: User = Depends(get_current_user),
+):
+    """Phase 7: Explain a specific skill in career context."""
+    from services.career_intelligence_context import CareerIntelligenceContextBuilder
+    from services.structured_response import StructuredResponseParser
+
+    skill_id = sanitize_string(request.get("skill_id", ""), max_length=100)
+    if not skill_id:
+        validation_error("skill_id is required")
+
+    context_builder = CareerIntelligenceContextBuilder()
+    context = context_builder.build_skill_explanation_context(str(current_user.id), skill_id)
+
+    ai_svc = None
+    try:
+        ai_svc = _get_ai_service()
+    except RuntimeError:
+        ai_unavailable("AI Mentor service is not configured.")
+
+    raw = await ai_svc.generate_with_template(
+        template_name="explain_skill",
+        context=context,
+        question=f"Explain the skill {skill_id} in the context of my career.",
+    )
+
+    parsed = StructuredResponseParser.parse_ai_response(raw, mode="skill_explanation")
+
+    return {
+        "success": True,
+        "explanation": parsed.answer,
+        "mode": "skill_explanation",
+    }
+
+
+@router.post("/mentor/interview-prep")
+async def generate_interview_prep(
+    current_user: User = Depends(get_current_user),
+):
+    """Phase 7: Generate interview preparation material."""
+    from services.career_intelligence_context import CareerIntelligenceContextBuilder
+    from services.structured_response import StructuredResponseParser
+
+    context_builder = CareerIntelligenceContextBuilder()
+    context = context_builder.build_interview_prep_context(str(current_user.id))
+
+    ai_svc = None
+    try:
+        ai_svc = _get_ai_service()
+    except RuntimeError:
+        ai_unavailable("AI Mentor service is not configured.")
+
+    raw = await ai_svc.generate_with_template(
+        template_name="interview_prep",
+        context=context,
+        question="Generate interview preparation material based on my skills.",
+    )
+
+    parsed = StructuredResponseParser.parse_ai_response(raw, mode="interview_prep")
+
+    return {
+        "success": True,
+        "interview_prep": parsed.answer,
+        "mode": "interview_prep",
+    }
+
+
+# ─── Phase 8: Career Opportunity Intelligence Routes ──────────────────────
+
+@router.get("/opportunities")
+async def list_opportunities(current_user: User = Depends(get_current_user)):
+    """List all active career opportunities."""
+    from services.opportunity_matching_service import OpportunityMatchingService
+    from repositories.opportunity_repositories import CareerOpportunityRepository
+
+    opp_repo = CareerOpportunityRepository()
+    opportunities = opp_repo.get_all_active()
+
+    return {
+        "success": True,
+        "opportunities": [
+            {
+                "id": str(opp.id),
+                "title": opp.title,
+                "organization": opp.organization,
+                "location": opp.location,
+                "remote": opp.remote,
+                "description": opp.description,
+                "opportunity_type": opp.opportunity_type,
+                "experience_level": opp.experience_level,
+            }
+            for opp in opportunities
+        ],
+        "count": len(opportunities),
+    }
+
+
+@router.get("/opportunities/{opportunity_id}")
+async def get_opportunity(opportunity_id: str, current_user: User = Depends(get_current_user)):
+    """Get a specific opportunity with its requirements."""
+    from repositories.opportunity_repositories import (
+        CareerOpportunityRepository,
+        OpportunityRequirementRepository,
+    )
+
+    opp_repo = CareerOpportunityRepository()
+    req_repo = OpportunityRequirementRepository()
+
+    opp = opp_repo.get_by_id(opportunity_id)
+    if not opp:
+        not_found("Opportunity not found")
+
+    requirements = req_repo.get_by_opportunity_id(opportunity_id)
+
+    return {
+        "success": True,
+        "opportunity": {
+            "id": str(opp.id),
+            "title": opp.title,
+            "organization": opp.organization,
+            "location": opp.location,
+            "remote": opp.remote,
+            "description": opp.description,
+            "opportunity_type": opp.opportunity_type,
+            "experience_level": opp.experience_level,
+        },
+        "requirements": [
+            {
+                "skill_name": r.skill_name,
+                "requirement_type": r.requirement_type,
+                "importance": r.importance,
+                "importance_score": r.importance_score,
+            }
+            for r in requirements
+        ],
+    }
+
+
+@router.post("/opportunities/{opportunity_id}/match")
+async def match_opportunity(
+    opportunity_id: str,
+    current_user: User = Depends(get_current_user),
+):
+    """Calculate match score for a specific opportunity."""
+    from services.opportunity_matching_service import OpportunityMatchingService
+    from repositories.repositories import SkillEvidenceRepository
+
+    evidence_repo = SkillEvidenceRepository()
+    user_evidence = evidence_repo.get_by_user_id(str(current_user.id))
+
+    cert_evidence = [e for e in user_evidence if _is_certification_evidence(e)]
+    user_certifications = [
+        e.skill_name for e in cert_evidence if e.confidence >= 70
+    ]
+
+    matcher = OpportunityMatchingService()
+    result = matcher.calculate_match(
+        user_id=str(current_user.id),
+        opportunity_id=opportunity_id,
+        user_evidence=user_evidence,
+        user_certifications=user_certifications,
+    )
+
+    if "error" in result:
+        not_found(result["error"])
+
+    return {"success": True, "match": result}
+
+
+@router.get("/opportunities/recommended/top")
+async def get_recommended_opportunities(
+    current_user: User = Depends(get_current_user),
+):
+    """Get top recommended opportunities ranked by match score."""
+    from services.opportunity_matching_service import OpportunityMatchingService
+    from services.opportunity_prioritization_service import OpportunityPrioritizationService
+    from repositories.repositories import SkillEvidenceRepository
+
+    evidence_repo = SkillEvidenceRepository()
+    user_evidence = evidence_repo.get_by_user_id(str(current_user.id))
+
+    cert_evidence = [e for e in user_evidence if _is_certification_evidence(e)]
+    user_certifications = [
+        e.skill_name for e in cert_evidence if e.confidence >= 70
+    ]
+
+    matcher = OpportunityMatchingService()
+    all_results = matcher.calculate_all_matches(
+        user_id=str(current_user.id),
+        user_evidence=user_evidence,
+        user_certifications=user_certifications,
+    )
+
+    prioritizer = OpportunityPrioritizationService()
+    top = prioritizer.get_top_recommendations(all_results, limit=10)
+    summary = prioritizer.get_category_summary(all_results)
+
+    return {
+        "success": True,
+        "matches": top,
+        "total": len(all_results),
+        "category_summary": summary,
+    }
+
+
+@router.get("/opportunities/matches")
+async def get_user_matches(current_user: User = Depends(get_current_user)):
+    """Get all saved matches for the current user."""
+    from services.opportunity_matching_service import OpportunityMatchingService
+
+    matcher = OpportunityMatchingService()
+    matches = matcher.get_user_matches(str(current_user.id))
+
+    return {
+        "success": True,
+        "matches": [
+            {
+                "match_id": str(item["match"].id),
+                "opportunity_id": str(item["opportunity"].id),
+                "opportunity_title": item["opportunity"].title,
+                "organization": item["opportunity"].organization,
+                "overall_score": item["match"].match_score,
+                "category": item["match"].match_category,
+                "missing_skills": item["match"].missing_skills,
+                "strengths": item["match"].strengths,
+                "recommendation": item["match"].recommendation,
+                "calculated_at": str(item["match"].calculated_at),
+            }
+            for item in matches
+        ],
+    }
+
+
+@router.post("/opportunities/{opportunity_id}/prepare")
+async def generate_preparation_plan(
+    opportunity_id: str,
+    current_user: User = Depends(get_current_user),
+):
+    """Generate a personalized preparation plan for an opportunity."""
+    from services.preparation_plan_service import PreparationPlanService
+    from repositories.repositories import SkillEvidenceRepository
+
+    evidence_repo = SkillEvidenceRepository()
+    user_evidence = evidence_repo.get_by_user_id(str(current_user.id))
+
+    cert_evidence = [e for e in user_evidence if _is_certification_evidence(e)]
+    user_certifications = [
+        e.skill_name for e in cert_evidence if e.confidence >= 70
+    ]
+
+    plan_service = PreparationPlanService()
+    plan = plan_service.generate_plan(
+        user_id=str(current_user.id),
+        opportunity_id=opportunity_id,
+        user_evidence=user_evidence,
+        user_certifications=user_certifications,
+    )
+
+    if "error" in plan:
+        not_found(plan["error"])
+
+    return {"success": True, "plan": plan}
+
+
+@router.get("/opportunities/compare")
+async def compare_opportunities(
+    opportunity_ids: str,
+    current_user: User = Depends(get_current_user),
+):
+    """Compare multiple opportunities side by side."""
+    from services.opportunity_matching_service import OpportunityMatchingService
+    from repositories.opportunity_repositories import (
+        CareerOpportunityRepository,
+        OpportunityRequirementRepository,
+    )
+    from repositories.repositories import SkillEvidenceRepository
+
+    ids = [oid.strip() for oid in opportunity_ids.split(",") if oid.strip()]
+    if not ids:
+        validation_error("Provide at least one opportunity_id")
+
+    opp_repo = CareerOpportunityRepository()
+    req_repo = OpportunityRequirementRepository()
+    evidence_repo = SkillEvidenceRepository()
+
+    user_evidence = evidence_repo.get_by_user_id(str(current_user.id))
+    cert_evidence = [e for e in user_evidence if _is_certification_evidence(e)]
+    user_certifications = [
+        e.skill_name for e in cert_evidence if e.confidence >= 70
+    ]
+
+    matcher = OpportunityMatchingService()
+    comparisons = []
+
+    for oid in ids:
+        opp = opp_repo.get_by_id(oid)
+        if not opp:
+            continue
+        match_result = matcher.calculate_match(
+            user_id=str(current_user.id),
+            opportunity_id=oid,
+            user_evidence=user_evidence,
+            user_certifications=user_certifications,
+        )
+        requirements = req_repo.get_by_opportunity_id(oid)
+        comparisons.append({
+            "opportunity": {
+                "id": str(opp.id),
+                "title": opp.title,
+                "organization": opp.organization,
+                "experience_level": opp.experience_level,
+            },
+            "match": match_result if "error" not in match_result else None,
+            "requirements_count": len(requirements),
+            "required_count": len([r for r in requirements if r.requirement_type == "required"]),
+        })
+
+    comparisons.sort(
+        key=lambda x: x["match"]["overall_score"] if x.get("match") else 0,
+        reverse=True,
+    )
+
+    return {"success": True, "comparisons": comparisons}
+
+
+@router.post("/mentor/explain-opportunity/{opportunity_id}")
+async def explain_opportunity(
+    opportunity_id: str,
+    current_user: User = Depends(get_current_user),
+):
+    """AI explanation of an opportunity match."""
+    from services.opportunity_matching_service import OpportunityMatchingService
+    from repositories.repositories import SkillEvidenceRepository
+
+    evidence_repo = SkillEvidenceRepository()
+    user_evidence = evidence_repo.get_by_user_id(str(current_user.id))
+
+    cert_evidence = [e for e in user_evidence if _is_certification_evidence(e)]
+    user_certifications = [
+        e.skill_name for e in cert_evidence if e.confidence >= 70
+    ]
+
+    matcher = OpportunityMatchingService()
+    match_result = matcher.calculate_match(
+        user_id=str(current_user.id),
+        opportunity_id=opportunity_id,
+        user_evidence=user_evidence,
+        user_certifications=user_certifications,
+    )
+
+    if "error" in match_result:
+        not_found(match_result["error"])
+
+    evidence_summary = f"User has {len(user_evidence)} evidence items across {len(set(e.skill_name for e in user_evidence))} skills."
+
+    context = {
+        "opportunity_title": match_result["opportunity_title"],
+        "organization": match_result.get("organization", "Various"),
+        "match_score": match_result["overall_score"],
+        "category": match_result["category"],
+        "required_skill_coverage": match_result["breakdown"]["required_skill_coverage"],
+        "evidence_strength": match_result["breakdown"]["evidence_strength"],
+        "project_relevance": match_result["breakdown"]["project_relevance"],
+        "certification_alignment": match_result["breakdown"]["certification_alignment"],
+        "experience_alignment": match_result["breakdown"]["experience_alignment"],
+        "strengths": match_result["strengths"],
+        "missing_skills": match_result["missing_skills"],
+        "evidence_summary": evidence_summary,
+    }
+
+    ai_svc = None
+    try:
+        ai_svc = _get_ai_service()
+    except RuntimeError:
+        ai_unavailable("AI service not configured")
+
+    explanation = await ai_svc.explain_opportunity(context)
+
+    return {
+        "success": True,
+        "explanation": explanation,
+        "match": match_result,
     }

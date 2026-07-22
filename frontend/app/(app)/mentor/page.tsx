@@ -1,18 +1,59 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Bot, Send, RotateCcw, Target, Clock, Zap, Copy, Check } from 'lucide-react';
+import { Bot, Send, RotateCcw, Target, Clock, Zap, Copy, Check, BookOpen, Briefcase, Code, GraduationCap, BarChart3, MessageSquare, Compass } from 'lucide-react';
 import { api } from '@/services/api';
 import type { MentorMessage } from '@/types';
 
-const SUGGESTED_ACTIONS = [
-  { label: 'Explain Today\'s Lesson', prompt: "Can you explain HTTP Authentication in detail? I want to understand Basic Auth, Digest Auth, and JWTs." },
-  { label: 'Quiz Me', prompt: "Quiz me on what I should know before starting HTTP Authentication." },
-  { label: 'Review My Resume', prompt: "Based on my profile, what are the biggest gaps in my resume for a Penetration Tester role?" },
-  { label: 'Help With My Project', prompt: "I'm building a Web Vulnerability Scanner in Python. What should I prioritize implementing first?" },
-  { label: 'Explain My Roadmap', prompt: "Why is HTTP Authentication placed before Burp Suite in my roadmap?" },
-  { label: 'Career Advice', prompt: "What's the fastest path from my current skill level to landing a junior pentesting job?" },
+type MentorMode = 'auto' | 'career' | 'roadmap' | 'skill' | 'project' | 'interview';
+
+const MODE_TABS: { key: MentorMode; label: string; icon: React.ReactNode }[] = [
+  { key: 'auto', label: 'Auto', icon: <Compass className="w-3.5 h-3.5" /> },
+  { key: 'career', label: 'Career', icon: <Briefcase className="w-3.5 h-3.5" /> },
+  { key: 'roadmap', label: 'Roadmap', icon: <BookOpen className="w-3.5 h-3.5" /> },
+  { key: 'skill', label: 'Skill', icon: <GraduationCap className="w-3.5 h-3.5" /> },
+  { key: 'project', label: 'Project', icon: <Code className="w-3.5 h-3.5" /> },
+  { key: 'interview', label: 'Interview', icon: <MessageSquare className="w-3.5 h-3.5" /> },
 ];
+
+const MODE_SUGGESTIONS: Record<MentorMode, { label: string; prompt: string }[]> = {
+  auto: [
+    { label: "Explain Today's Lesson", prompt: "Can you explain HTTP Authentication in detail?" },
+    { label: "Career Advice", prompt: "What's the fastest path from my current skill level to landing a junior pentesting job?" },
+    { label: "Help With My Project", prompt: "I'm building a Web Vulnerability Scanner in Python. What should I prioritize implementing first?" },
+    { label: "Quiz Me", prompt: "Quiz me on what I should know before starting HTTP Authentication." },
+  ],
+  career: [
+    { label: "What's holding me back?", prompt: "What is the #1 thing holding me back from being job-ready?" },
+    { label: "My strengths", prompt: "What are my strongest cybersecurity skills based on my evidence?" },
+    { label: "Next skill to learn", prompt: "What skill should I focus on next and why?" },
+    { label: "Readiness breakdown", prompt: "Give me a detailed breakdown of my readiness score." },
+  ],
+  roadmap: [
+    { label: "Why this order?", prompt: "Why is my roadmap structured in this particular order?" },
+    { label: "Current step", prompt: "What should I focus on in my current roadmap step?" },
+    { label: "After completion", prompt: "What happens after I complete my current step?" },
+    { label: "Explain prerequisites", prompt: "Why do I need to learn prerequisites before the main skill?" },
+  ],
+  skill: [
+    { label: "Teach me SIEM", prompt: "Explain SIEM and why it matters for my career." },
+    { label: "My weakest skill", prompt: "What is my weakest skill and how can I improve it?" },
+    { label: "Skill evidence", prompt: "Show me what evidence I have for my Python skills." },
+    { label: "Learning approach", prompt: "What's the best way to learn network security?" },
+  ],
+  project: [
+    { label: "Plan a project", prompt: "Help me plan a cybersecurity project that showcases my skills." },
+    { label: "Architecture advice", prompt: "What architecture should I use for a network monitoring tool?" },
+    { label: "Portfolio tips", prompt: "How should I present my projects in a portfolio for employers?" },
+    { label: "Milestones", prompt: "Break down a home lab project into milestones for me." },
+  ],
+  interview: [
+    { label: "Mock interview", prompt: "Ask me interview questions for a SOC Analyst position." },
+    { label: "My weak areas", prompt: "What topics am I likely to struggle with in an interview?" },
+    { label: "Resume gaps", prompt: "What are the biggest gaps in my resume for a pentester role?" },
+    { label: "Study plan", prompt: "Create a 2-week study plan for my upcoming security interview." },
+  ],
+};
 
 
 
@@ -92,6 +133,7 @@ export default function MentorPage() {
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [activeMode, setActiveMode] = useState<MentorMode>('auto');
   
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -136,11 +178,12 @@ export default function MentorPage() {
     setLoading(true);
 
     try {
-      const res = await api.chat(msg);
-      if (res.success && res.response) {
+      const modeParam = activeMode === 'auto' ? undefined : activeMode;
+      const res = await api.generateMentorResponse(msg, 'default', modeParam);
+      if (res.success && res.answer) {
         const aiMsg: MentorMessage = {
           id: (Date.now() + 1).toString(), role: 'assistant',
-          content: res.response,
+          content: res.answer,
           timestamp: new Date().toISOString(),
         };
         setMessages(prev => [...prev, aiMsg]);
@@ -201,6 +244,26 @@ export default function MentorPage() {
         </div>
       </div>
 
+      {/* ── Mode Tabs ────────────────────────────────────────────────────── */}
+      <div className="flex-shrink-0 mb-4">
+        <div className="flex gap-1 p-1 surface rounded-xl">
+          {MODE_TABS.map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveMode(tab.key)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                activeMode === tab.key
+                  ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                  : 'text-zinc-500 hover:text-zinc-300 hover:bg-white/[0.04] border border-transparent'
+              }`}
+            >
+              {tab.icon}
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* ── Chat Area ─────────────────────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto space-y-5 pb-4">
         {messages.map(m => <MessageBubble key={m.id} message={m} />)}
@@ -223,7 +286,7 @@ export default function MentorPage() {
       {/* ── Suggested Actions ─────────────────────────────────────────────── */}
       {messages.length <= 1 && !loading && (
         <div className="flex flex-wrap gap-2 mb-3 flex-shrink-0">
-          {SUGGESTED_ACTIONS.map(a => (
+          {(MODE_SUGGESTIONS[activeMode] || MODE_SUGGESTIONS.auto).map(a => (
             <button
               key={a.label}
               onClick={() => send(a.prompt)}

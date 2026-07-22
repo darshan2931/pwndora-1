@@ -38,10 +38,22 @@ async def lifespan(app: FastAPI):
         User, CyberProfile, Assessment, Roadmap, ChatMemory, ChatHistory,
         ResumeAnalysis, ResumeReview, Skill, Project, ResumeProfile,
         GitHubProfile, GitHubRepositoryEvidence, SkillEvidence,
-        UserSkillProfile, CareerRoleAnalysis,
+        UserSkillProfile, CareerRoleAnalysis, MentorMemory,
+        CareerOpportunity, OpportunityRequirement, OpportunityMatch,
     )
     Base.metadata.create_all(bind=engine)
     logger.info("Database tables verified/created.")
+
+    from repositories.opportunity_repositories import CareerOpportunityRepository
+    import json
+    opp_repo = CareerOpportunityRepository()
+    seed_path = os.path.join(os.path.dirname(__file__), "..", "knowledge", "opportunities.json")
+    if os.path.exists(seed_path):
+        with open(seed_path) as f:
+            opportunities = json.load(f)
+        seeded = opp_repo.seed_opportunities(opportunities)
+        if seeded > 0:
+            logger.info("Seeded %d career opportunities.", seeded)
 
     _ai_service = AIService(provider_name="gemini")
 

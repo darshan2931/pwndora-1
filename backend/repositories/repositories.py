@@ -1,5 +1,5 @@
 from database.session import SessionLocal
-from models.sqlalchemy_models import User, Assessment, Roadmap, ChatHistory, ResumeReview, ResumeProfile, GitHubProfile, GitHubRepositoryEvidence, SkillEvidence, UserSkillProfile, CareerRoleAnalysis
+from models.sqlalchemy_models import User, Assessment, Roadmap, ChatHistory, ResumeReview, ResumeProfile, GitHubProfile, GitHubRepositoryEvidence, SkillEvidence, UserSkillProfile, CareerRoleAnalysis, CareerEvidenceEvent, CareerChangeLog, RoadmapVersion
 
 
 class UserRepository:
@@ -59,7 +59,32 @@ class RoadmapRepository:
         finally:
             db.close()
 
-    def create(self, assessment_id: str, steps: list, total_hours: int, estimated_weeks: int) -> Roadmap:
+    def get_by_user_id(self, user_id: str, limit: int = 10):
+        db = SessionLocal()
+        try:
+            return (
+                db.query(Roadmap)
+                .filter(Roadmap.user_id == user_id)
+                .order_by(Roadmap.created_at.desc())
+                .limit(limit)
+                .all()
+            )
+        finally:
+            db.close()
+
+    def get_latest_by_user_and_assessment(self, user_id: str, assessment_id: str):
+        db = SessionLocal()
+        try:
+            return (
+                db.query(Roadmap)
+                .filter(Roadmap.user_id == user_id, Roadmap.assessment_id == assessment_id)
+                .order_by(Roadmap.version.desc())
+                .first()
+            )
+        finally:
+            db.close()
+
+    def create(self, assessment_id: str, steps: list, total_hours: int, estimated_weeks: int, **kwargs) -> Roadmap:
         db = SessionLocal()
         try:
             roadmap = Roadmap(
@@ -67,6 +92,7 @@ class RoadmapRepository:
                 steps=steps,
                 total_hours=total_hours,
                 estimated_weeks=estimated_weeks,
+                **kwargs,
             )
             db.add(roadmap)
             db.commit()
@@ -80,9 +106,21 @@ class RoadmapRepository:
         try:
             roadmap = db.query(Roadmap).filter(Roadmap.id == roadmap_id).first()
             if roadmap:
-                # SQLAlchemy JSON columns need explicit flag modification sometimes
-                # or just re-assigning the new dict/list copy
                 roadmap.steps = steps
+                db.commit()
+                db.refresh(roadmap)
+            return roadmap
+        finally:
+            db.close()
+
+    def update(self, roadmap_id: str, **kwargs) -> Roadmap:
+        db = SessionLocal()
+        try:
+            roadmap = db.query(Roadmap).filter(Roadmap.id == roadmap_id).first()
+            if roadmap:
+                for key, value in kwargs.items():
+                    if hasattr(roadmap, key):
+                        setattr(roadmap, key, value)
                 db.commit()
                 db.refresh(roadmap)
             return roadmap
@@ -561,5 +599,186 @@ class CareerRoleAnalysisRepository:
         try:
             db.query(CareerRoleAnalysis).filter(CareerRoleAnalysis.user_id == user_id).delete()
             db.commit()
+        finally:
+            db.close()
+
+
+class CareerEvidenceEventRepository:
+    def get_by_id(self, event_id: str):
+        db = SessionLocal()
+        try:
+            return db.query(CareerEvidenceEvent).filter(CareerEvidenceEvent.id == event_id).first()
+        finally:
+            db.close()
+
+    def get_by_user_id(self, user_id: str, limit: int = 50):
+        db = SessionLocal()
+        try:
+            return (
+                db.query(CareerEvidenceEvent)
+                .filter(CareerEvidenceEvent.user_id == user_id)
+                .order_by(CareerEvidenceEvent.created_at.desc())
+                .limit(limit)
+                .all()
+            )
+        finally:
+            db.close()
+
+    def get_pending_events(self, user_id: str = None, limit: int = 100):
+        db = SessionLocal()
+        try:
+            q = db.query(CareerEvidenceEvent).filter(CareerEvidenceEvent.status == "pending")
+            if user_id:
+                q = q.filter(CareerEvidenceEvent.user_id == user_id)
+            return q.order_by(CareerEvidenceEvent.created_at.asc()).limit(limit).all()
+        finally:
+            db.close()
+
+    def get_by_idempotency_key(self, key: str):
+        db = SessionLocal()
+        try:
+            return db.query(CareerEvidenceEvent).filter(CareerEvidenceEvent.idempotency_key == key).first()
+        finally:
+            db.close()
+
+    def create(self, user_id: str, event_type: str, event_data: dict = None, idempotency_key: str = None) -> CareerEvidenceEvent:
+        db = SessionLocal()
+        try:
+            event = CareerEvidenceEvent(
+                user_id=user_id,
+                event_type=event_type,
+                event_data=event_data or {},
+                idempotency_key=idempotency_key,
+                status="pending",
+            )
+            db.add(event)
+            db.commit()
+            db.refresh(event)
+            return event
+        finally:
+            db.close()
+
+    def update_status(self, event_id: str, status: str, error_message: str = None):
+        db = SessionLocal()
+        try:
+            event = db.query(CareerEvidenceEvent).filter(CareerEvidenceEvent.id == event_id).first()
+            if event:
+                event.status = status
+                if error_message:
+                    event.error_message = error_message
+                if status == "processed":
+                    from datetime import datetime
+                    event.processed_at = datetime.utcnow()
+                if status == "failed":
+                    event.retry_count = (event.retry_count or 0) + 1
+                db.commit()
+                db.refresh(event)
+            return event
+        finally:
+            db.close()
+
+
+class CareerChangeLogRepository:
+    def get_by_user_id(self, user_id: str, limit: int = 100):
+        db = SessionLocal()
+        try:
+            return (
+                db.query(CareerChangeLog)
+                .filter(CareerChangeLog.user_id == user_id)
+                .order_by(CareerChangeLog.created_at.desc())
+                .limit(limit)
+                .all()
+            )
+        finally:
+            db.close()
+
+    def get_by_event_id(self, event_id: str):
+        db = SessionLocal()
+        try:
+            return (
+                db.query(CareerChangeLog)
+                .filter(CareerChangeLog.event_id == event_id)
+                .order_by(CareerChangeLog.created_at.asc())
+                .all()
+            )
+        finally:
+            db.close()
+
+    def create(self, user_id: str, event_id: str, change_type: str, **kwargs) -> CareerChangeLog:
+        db = SessionLocal()
+        try:
+            log = CareerChangeLog(
+                user_id=user_id,
+                event_id=event_id,
+                change_type=change_type,
+                **kwargs,
+            )
+            db.add(log)
+            db.commit()
+            db.refresh(log)
+            return log
+        finally:
+            db.close()
+
+
+class RoadmapVersionRepository:
+    def get_by_user_id(self, user_id: str, limit: int = 10):
+        db = SessionLocal()
+        try:
+            return (
+                db.query(RoadmapVersion)
+                .filter(RoadmapVersion.user_id == user_id)
+                .order_by(RoadmapVersion.version_number.desc())
+                .limit(limit)
+                .all()
+            )
+        finally:
+            db.close()
+
+    def get_latest_by_user(self, user_id: str):
+        db = SessionLocal()
+        try:
+            return (
+                db.query(RoadmapVersion)
+                .filter(RoadmapVersion.user_id == user_id)
+                .order_by(RoadmapVersion.version_number.desc())
+                .first()
+            )
+        finally:
+            db.close()
+
+    def get_by_id(self, version_id: str):
+        db = SessionLocal()
+        try:
+            return db.query(RoadmapVersion).filter(RoadmapVersion.id == version_id).first()
+        finally:
+            db.close()
+
+    def create(self, user_id: str, assessment_id: str, version_number: int, **kwargs) -> RoadmapVersion:
+        db = SessionLocal()
+        try:
+            version = RoadmapVersion(
+                user_id=user_id,
+                assessment_id=assessment_id,
+                version_number=version_number,
+                **kwargs,
+            )
+            db.add(version)
+            db.commit()
+            db.refresh(version)
+            return version
+        finally:
+            db.close()
+
+    def get_next_version_number(self, user_id: str) -> int:
+        db = SessionLocal()
+        try:
+            latest = (
+                db.query(RoadmapVersion)
+                .filter(RoadmapVersion.user_id == user_id)
+                .order_by(RoadmapVersion.version_number.desc())
+                .first()
+            )
+            return (latest.version_number + 1) if latest else 1
         finally:
             db.close()

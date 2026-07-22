@@ -116,3 +116,58 @@ class AIService:
     def clear_session(self, session_id: str) -> None:
         """Clears cached chat session data. Currently a no-op as sessions are managed in DB."""
 
+    async def generate_mentor_response_v2(
+        self,
+        question: str,
+        context: dict,
+        mode: str,
+        mode_description: str,
+        session_id: str = "default",
+    ) -> str:
+        """Phase 7: Generate an evidence-based mentor response using structured context."""
+        import json
+        context_block = f"```json\n{json.dumps(context, indent=2, default=str)}\n```"
+        prompt = (
+            f"Mentor mode: {mode}\n"
+            f"Mode description: {mode_description}\n\n"
+            f"User question: {question}"
+        )
+
+        return await self.orchestrator.execute_task(
+            task_prompt=prompt,
+            template_name="mentor_v2",
+            raw_context=context_block,
+            json_mode=False,
+        )
+
+    async def generate_with_template(
+        self,
+        template_name: str,
+        context: dict,
+        question: str,
+    ) -> str:
+        """Phase 7: Generate a response using a specific prompt template and context."""
+        import json
+        context_block = f"```json\n{json.dumps(context, indent=2, default=str)}\n```"
+        return await self.orchestrator.execute_task(
+            task_prompt=question,
+            template_name=template_name,
+            raw_context=context_block,
+            json_mode=False,
+        )
+
+    async def explain_opportunity(self, context: dict) -> str:
+        """Phase 8: Explain an opportunity match to the user with actionable advice."""
+        import json
+        context_block = f"```json\n{json.dumps(context, indent=2, default=str)}\n```"
+        prompt = (
+            f"Explain the opportunity match for: {context.get('opportunity_title', 'Unknown')} "
+            f"(Score: {context.get('match_score', 0)}/100, Category: {context.get('category', 'unknown')})"
+        )
+        return await self.orchestrator.execute_task(
+            task_prompt=prompt,
+            template_name="opportunity_explanation",
+            raw_context=context_block,
+            json_mode=False,
+        )
+

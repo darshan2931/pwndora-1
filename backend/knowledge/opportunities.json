@@ -1,0 +1,223 @@
+[
+  {
+    "title": "SOC Analyst L1",
+    "organization": "Various Organizations",
+    "location": "Remote / Hybrid",
+    "remote": "hybrid",
+    "description": "Entry-level Security Operations Center analyst responsible for monitoring security alerts, triaging incidents, and performing initial investigations using SIEM tools and security playbooks.",
+    "source": "cybersecurity_careers",
+    "source_url": null,
+    "opportunity_type": "job",
+    "experience_level": "entry",
+    "requirements": [
+      {"skill_name": "SIEM", "requirement_type": "required", "importance": "critical", "importance_score": 100},
+      {"skill_name": "Linux Fundamentals", "requirement_type": "required", "importance": "high", "importance_score": 90},
+      {"skill_name": "Networking Fundamentals", "requirement_type": "required", "importance": "high", "importance_score": 90},
+      {"skill_name": "Scripting", "requirement_type": "required", "importance": "important", "importance_score": 70},
+      {"skill_name": "Log Analysis", "requirement_type": "required", "importance": "high", "importance_score": 90},
+      {"skill_name": "Incident Response", "requirement_type": "preferred", "importance": "medium", "importance_score": 50},
+      {"skill_name": "Network Security", "requirement_type": "preferred", "importance": "medium", "importance_score": 50},
+      {"skill_name": "CompTIA Security+", "requirement_type": "certification", "importance": "important", "importance_score": 70}
+    ]
+  },
+  {
+    "title": "SOC Analyst L2",
+    "organization": "Various Organizations",
+    "location": "Remote / Hybrid",
+    "remote": "hybrid",
+    "description": "Mid-level SOC analyst performing deep-dive investigations, threat hunting, and escalation management. Works with advanced detection tools and mentors L1 analysts.",
+    "source": "cybersecurity_careers",
+    "source_url": null,
+    "opportunity_type": "job",
+    "experience_level": "mid",
+    "requirements": [
+      {"skill_name": "Threat Hunting", "requirement_type": "required", "importance": "critical", "importance_score": 100},
+      {"skill_name": "SIEM", "requirement_type": "required", "importance": "critical", "importance_score": 100},
+      {"skill_name": "Incident Response", "requirement_type": "required", "importance": "high", "importance_score": 90},
+      {"skill_name": "Malware Analysis", "requirement_type": "required", "importance": "high", "importance_score": 90},
+      {"skill_name": "Digital Forensics", "requirement_type": "required", "importance": "important", "importance_score": 70},
+      {"skill_name": "Linux Fundamentals", "requirement_type": "required", "importance": "high", "importance_score": 90},
+      {"skill_name": "Networking Fundamentals", "requirement_type": "required", "importance": "high", "importance_score": 90},
+      {"skill_name": "Scripting", "requirement_type": "required", "importance": "important", "importance_score": 70},
+      {"skill_name": "Log Analysis", "requirement_type": "required", "importance": "high", "importance_score": 90},
+      {"skill_name": "Network Security", "requirement_type": "preferred", "importance": "medium", "importance_score": 50},
+      {"skill_name": "Cloud Security", "requirement_type": "preferred", "importance": "medium", "importance_score": 50},
+      {"skill_name": "CompTIA CySA+", "requirement_type": "certification", "importance": "important", "importance_score": 70}
+    ]
+  },
+  {
+    "title": "Penetration Tester",
+    "organization": "Various Organizations",
+    "location": "Remote / On-site",
+    "remote": "remote",
+    "description": "Security professional conducting authorized penetration tests on applications, networks, and infrastructure. Produces detailed vulnerability reports and remediation recommendations.",
+    "source": "cybersecurity_careers",
+    "source_url": null,
+    "opportunity_type": "job",
+    "experience_level": "mid",
+    "requirements": [
+      {"skill_name": "Web Application Security", "requirement_type": "required", "importance": "critical", "importance_score": 100},
+      {"skill_name": "Network Security", "requirement_type": "required", "importance": "critical", "importance_score": 100},
+      {"skill_name": "Vulnerability Assessment", "requirement_type": "required", "importance": "high", "importance_score": 90},
+      {"skill_name": "Scripting", "requirement_type": "required", "importance": "high", "importance_score": 90},
+      {"skill_name": "Linux Fundamentals", "requirement_type": "required", "importance": "high", "importance_score": 90},
+      {"skill_name": "Networking Fundamentals", "requirement_type": "required", "importance": "high", "importance_score": 90},
+      {"skill_name": "Cryptography", "requirement_type": "preferred", "importance": "medium", "importance_score": 50},
+      {"skill_name": "Cloud Security", "requirement_type": "preferred", "importance": "medium", "importance_score": 50},
+      {"skill_name": "OSCP", "requirement_type": "certification", "importance": "high", "importance_score": 90},
+      {"skill_name": "CompTIA PenTest+", "requirement_type": "certification", "importance": "important", "importance_score": 70}
+    ]
+  },
+  {
+    "title": "Cloud Security Engineer",
+    "organization": "Various Organizations",
+    "location": "Remote",
+    "remote": "remote",
+    "description": "Engineer responsible for securing cloud infrastructure across AWS, Azure, and GCP. Implements security controls, manages IAM, and ensures compliance in cloud environments.",
+    "source": "cybersecurity_careers",
+    "source_url": null,
+    "opportunity_type": "job",
+    "experience_level": "mid",
+    "requirements": [
+      {"skill_name": "Cloud Security", "requirement_type": "required", "importance": "critical", "importance_score": 100},
+      {"skill_name": "AWS Security", "requirement_type": "required", "importance": "high", "importance_score": 90},
+      {"skill_name": "Network Security", "requirement_type": "required", "importance": "high", "importance_score": 90},
+      {"skill_name": "Identity and Access Management", "requirement_type": "required", "importance": "high", "importance_score": 90},
+      {"skill_name": "Linux Fundamentals", "requirement_type": "required", "importance": "important", "importance_score": 70},
+      {"skill_name": "Scripting", "requirement_type": "required", "importance": "important", "importance_score": 70},
+      {"skill_name": "Cryptography", "requirement_type": "preferred", "importance": "medium", "importance_score": 50},
+      {"skill_name": "SIEM", "requirement_type": "preferred", "importance": "medium", "importance_score": 50},
+      {"skill_name": "AWS Security Specialty", "requirement_type": "certification", "importance": "high", "importance_score": 90},
+      {"skill_name": "CompTIA Security+", "requirement_type": "certification", "importance": "important", "importance_score": 70}
+    ]
+  },
+  {
+    "title": "Incident Responder",
+    "organization": "Various Organizations",
+    "location": "Remote / On-site",
+    "remote": "hybrid",
+    "description": "Specialist responsible for responding to security incidents, performing forensic investigations, containing threats, and leading recovery efforts.",
+    "source": "cybersecurity_careers",
+    "source_url": null,
+    "opportunity_type": "job",
+    "experience_level": "mid",
+    "requirements": [
+      {"skill_name": "Incident Response", "requirement_type": "required", "importance": "critical", "importance_score": 100},
+      {"skill_name": "Digital Forensics", "requirement_type": "required", "importance": "critical", "importance_score": 100},
+      {"skill_name": "Malware Analysis", "requirement_type": "required", "importance": "high", "importance_score": 90},
+      {"skill_name": "Linux Fundamentals", "requirement_type": "required", "importance": "high", "importance_score": 90},
+      {"skill_name": "Networking Fundamentals", "requirement_type": "required", "importance": "high", "importance_score": 90},
+      {"skill_name": "SIEM", "requirement_type": "required", "importance": "high", "importance_score": 90},
+      {"skill_name": "Scripting", "requirement_type": "required", "importance": "important", "importance_score": 70},
+      {"skill_name": "Cloud Security", "requirement_type": "preferred", "importance": "medium", "importance_score": 50},
+      {"skill_name": "GCIH", "requirement_type": "certification", "importance": "high", "importance_score": 90},
+      {"skill_name": "CompTIA CySA+", "requirement_type": "certification", "importance": "important", "importance_score": 70}
+    ]
+  },
+  {
+    "title": "Security Architect",
+    "organization": "Various Organizations",
+    "location": "Remote / Hybrid",
+    "remote": "hybrid",
+    "description": "Senior security professional responsible for designing and implementing comprehensive security architectures across enterprise infrastructure, applications, and cloud environments.",
+    "source": "cybersecurity_careers",
+    "source_url": null,
+    "opportunity_type": "job",
+    "experience_level": "senior",
+    "requirements": [
+      {"skill_name": "Cloud Security", "requirement_type": "required", "importance": "critical", "importance_score": 100},
+      {"skill_name": "Network Security", "requirement_type": "required", "importance": "critical", "importance_score": 100},
+      {"skill_name": "Identity and Access Management", "requirement_type": "required", "importance": "high", "importance_score": 90},
+      {"skill_name": "Cryptography", "requirement_type": "required", "importance": "high", "importance_score": 90},
+      {"skill_name": "Web Application Security", "requirement_type": "required", "importance": "high", "importance_score": 90},
+      {"skill_name": "Threat Modeling", "requirement_type": "required", "importance": "high", "importance_score": 90},
+      {"skill_name": "SIEM", "requirement_type": "preferred", "importance": "medium", "importance_score": 50},
+      {"skill_name": "Linux Fundamentals", "requirement_type": "required", "importance": "important", "importance_score": 70},
+      {"skill_name": "AWS Security Specialty", "requirement_type": "certification", "importance": "high", "importance_score": 90},
+      {"skill_name": "CISSP", "requirement_type": "certification", "importance": "high", "importance_score": 90}
+    ]
+  },
+  {
+    "title": "GRC Analyst",
+    "organization": "Various Organizations",
+    "location": "Remote / On-site",
+    "remote": "hybrid",
+    "description": "Analyst responsible for governance, risk management, and compliance activities. Ensures organizational adherence to security frameworks, conducts risk assessments, and manages audit processes.",
+    "source": "cybersecurity_careers",
+    "source_url": null,
+    "opportunity_type": "job",
+    "experience_level": "entry",
+    "requirements": [
+      {"skill_name": "Risk Management", "requirement_type": "required", "importance": "critical", "importance_score": 100},
+      {"skill_name": "Compliance", "requirement_type": "required", "importance": "critical", "importance_score": 100},
+      {"skill_name": "Security Frameworks", "requirement_type": "required", "importance": "high", "importance_score": 90},
+      {"skill_name": "Networking Fundamentals", "requirement_type": "preferred", "importance": "medium", "importance_score": 50},
+      {"skill_name": "Cloud Security", "requirement_type": "preferred", "importance": "low", "importance_score": 30},
+      {"skill_name": "CompTIA Security+", "requirement_type": "certification", "importance": "high", "importance_score": 90},
+      {"skill_name": "CISA", "requirement_type": "certification", "importance": "important", "importance_score": 70}
+    ]
+  },
+  {
+    "title": "Malware Analyst",
+    "organization": "Various Organizations",
+    "location": "Remote",
+    "remote": "remote",
+    "description": "Specialist analyzing malicious software to understand functionality, origins, and impact. Develops detection signatures and provides intelligence to incident response teams.",
+    "source": "cybersecurity_careers",
+    "source_url": null,
+    "opportunity_type": "job",
+    "experience_level": "mid",
+    "requirements": [
+      {"skill_name": "Malware Analysis", "requirement_type": "required", "importance": "critical", "importance_score": 100},
+      {"skill_name": "Reverse Engineering", "requirement_type": "required", "importance": "critical", "importance_score": 100},
+      {"skill_name": "Scripting", "requirement_type": "required", "importance": "high", "importance_score": 90},
+      {"skill_name": "Linux Fundamentals", "requirement_type": "required", "importance": "high", "importance_score": 90},
+      {"skill_name": "Cryptography", "requirement_type": "required", "importance": "important", "importance_score": 70},
+      {"skill_name": "Networking Fundamentals", "requirement_type": "required", "importance": "important", "importance_score": 70},
+      {"skill_name": "Digital Forensics", "requirement_type": "preferred", "importance": "medium", "importance_score": 50},
+      {"skill_name": "GREM", "requirement_type": "certification", "importance": "high", "importance_score": 90}
+    ]
+  },
+  {
+    "title": "DevSecOps Engineer",
+    "organization": "Various Organizations",
+    "location": "Remote",
+    "remote": "remote",
+    "description": "Engineer integrating security into CI/CD pipelines. Implements automated security testing, container security, and infrastructure-as-code security practices.",
+    "source": "cybersecurity_careers",
+    "source_url": null,
+    "opportunity_type": "job",
+    "experience_level": "mid",
+    "requirements": [
+      {"skill_name": "Scripting", "requirement_type": "required", "importance": "critical", "importance_score": 100},
+      {"skill_name": "Cloud Security", "requirement_type": "required", "importance": "high", "importance_score": 90},
+      {"skill_name": "Linux Fundamentals", "requirement_type": "required", "importance": "high", "importance_score": 90},
+      {"skill_name": "Web Application Security", "requirement_type": "required", "importance": "high", "importance_score": 90},
+      {"skill_name": "Vulnerability Assessment", "requirement_type": "required", "importance": "high", "importance_score": 90},
+      {"skill_name": "Network Security", "requirement_type": "preferred", "importance": "medium", "importance_score": 50},
+      {"skill_name": "SIEM", "requirement_type": "preferred", "importance": "medium", "importance_score": 50},
+      {"skill_name": "AWS Security Specialty", "requirement_type": "certification", "importance": "important", "importance_score": 70}
+    ]
+  },
+  {
+    "title": "Threat Intelligence Analyst",
+    "organization": "Various Organizations",
+    "location": "Remote / Hybrid",
+    "remote": "hybrid",
+    "description": "Analyst collecting, analyzing, and disseminating cyber threat intelligence. Tracks threat actors, TTPs, and provides actionable intelligence to defensive teams.",
+    "source": "cybersecurity_careers",
+    "source_url": null,
+    "opportunity_type": "job",
+    "experience_level": "mid",
+    "requirements": [
+      {"skill_name": "Threat Hunting", "requirement_type": "required", "importance": "critical", "importance_score": 100},
+      {"skill_name": "SIEM", "requirement_type": "required", "importance": "high", "importance_score": 90},
+      {"skill_name": "Malware Analysis", "requirement_type": "required", "importance": "high", "importance_score": 90},
+      {"skill_name": "Networking Fundamentals", "requirement_type": "required", "importance": "high", "importance_score": 90},
+      {"skill_name": "Scripting", "requirement_type": "required", "importance": "important", "importance_score": 70},
+      {"skill_name": "Log Analysis", "requirement_type": "required", "importance": "important", "importance_score": 70},
+      {"skill_name": "Digital Forensics", "requirement_type": "preferred", "importance": "medium", "importance_score": 50},
+      {"skill_name": "CTIA", "requirement_type": "certification", "importance": "important", "importance_score": 70}
+    ]
+  }
+]

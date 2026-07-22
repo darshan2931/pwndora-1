@@ -46,35 +46,35 @@ class TestDocxExtraction:
     def test_extract_docx(self):
         import docx
         with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as f:
+            tmp_path = f.name
+        try:
             doc = docx.Document()
             doc.add_paragraph("John Doe")
             doc.add_paragraph("Cybersecurity Analyst with 5 years of experience")
             doc.add_paragraph("Skills: Python, Linux, SIEM")
-            doc.save(f.name)
-            f.flush()
-            try:
-                result = ResumeTextExtractor.extract(f.name)
-                assert isinstance(result, TextExtractionResult)
-                assert "John Doe" in result.text
-                assert "Python" in result.text
-                assert result.file_type == "docx"
-                assert result.character_count > 0
-                assert result.page_count is None
-            finally:
-                os.unlink(f.name)
+            doc.save(tmp_path)
+            result = ResumeTextExtractor.extract(tmp_path)
+            assert isinstance(result, TextExtractionResult)
+            assert "John Doe" in result.text
+            assert "Python" in result.text
+            assert result.file_type == "docx"
+            assert result.character_count > 0
+            assert result.page_count is None
+        finally:
+            os.unlink(tmp_path)
 
     def test_empty_docx(self):
         import docx
         with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as f:
+            tmp_path = f.name
+        try:
             doc = docx.Document()
-            doc.save(f.name)
-            f.flush()
-            try:
-                result = ResumeTextExtractor.extract(f.name)
-                assert result.text == ""
-                assert result.character_count == 0
-            finally:
-                os.unlink(f.name)
+            doc.save(tmp_path)
+            result = ResumeTextExtractor.extract(tmp_path)
+            assert result.text == ""
+            assert result.character_count == 0
+        finally:
+            os.unlink(tmp_path)
 
 
 class TestTextNormalization:

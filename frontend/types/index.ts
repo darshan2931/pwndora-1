@@ -103,6 +103,11 @@ export interface MentorMessage {
   role: 'user' | 'assistant';
   content: string;
   timestamp: string;
+  mode?: string;
+  confidence?: string;
+  sources?: { type: string; skill: string; detail: string }[];
+  recommended_actions?: { title: string; reason: string }[];
+  warnings?: string[];
 }
 
 export interface MentorContext {
@@ -217,6 +222,35 @@ export interface GitHubAnalysisData {
   repositories?: GitHubRepoEvidence[];
   message?: string;
   cached?: boolean;
+}
+
+// ─── Personalized Roadmap ────────────────────────────────────────────────────
+
+export interface RoadmapPhase {
+  id: string;
+  name: string;
+  description: string;
+  nodeRange: [number, number];
+  totalHours: number;
+  skillCount: number;
+  projectCount: number;
+  certificationCount: number;
+}
+
+export interface PersonalizedRoadmapData {
+  roadmap_id: string;
+  version: number;
+  user_id: string;
+  assessment_id: string;
+  role_id: string;
+  role_name: string;
+  nodes: RoadmapNode[];
+  phases: RoadmapPhase[];
+  total_hours: number;
+  estimated_weeks: number;
+  readiness_score: number;
+  generation_reason: string;
+  created_at: string | null;
 }
 
 // ─── Skill Evidence ───────────────────────────────────────────────────────────
@@ -368,4 +402,194 @@ export interface RoleGapAnalysisData {
   learning_path: Record<string, any>[];
   ai_explanation?: string | null;
   analyzed_at?: string | null;
+}
+
+// ─── Phase 6: Career Evidence Event Loop ──────────────────────────────────────
+
+export type CareerEventType =
+  | 'roadmap_skill_completed'
+  | 'roadmap_project_completed'
+  | 'roadmap_certification_completed'
+  | 'github_repository_linked'
+  | 'github_repository_analyzed'
+  | 'github_profile_reanalyzed'
+  | 'assessment_completed'
+  | 'resume_uploaded'
+  | 'certification_added'
+  | 'experience_added';
+
+export type CareerEventStatus = 'pending' | 'processing' | 'processed' | 'failed';
+
+export interface CareerEvidenceEvent {
+  id: string;
+  event_type: CareerEventType;
+  event_data: Record<string, any>;
+  status: CareerEventStatus;
+  idempotency_key?: string | null;
+  retry_count: number;
+  error_message?: string | null;
+  processed_at?: string | null;
+  created_at: string;
+}
+
+export interface CareerChangeLog {
+  id: string;
+  event_id: string;
+  change_type: string;
+  skill_name?: string | null;
+  old_value?: Record<string, any> | null;
+  new_value?: Record<string, any> | null;
+  confidence_delta: number;
+  readiness_delta: number;
+  explanation?: string | null;
+  ai_explanation?: string | null;
+  created_at: string;
+}
+
+export interface CareerTimelineEntry {
+  id: string;
+  event_id: string;
+  change_type: string;
+  skill_name?: string | null;
+  old_value?: Record<string, any> | null;
+  new_value?: Record<string, any> | null;
+  confidence_delta: number;
+  readiness_delta: number;
+  explanation?: string | null;
+  ai_explanation?: string | null;
+  created_at: string;
+}
+
+export interface CareerProgressSummary {
+  skills: {
+    total: number;
+    high: number;
+    medium: number;
+    low: number;
+    minimal: number;
+    average_confidence: number;
+  };
+  readiness: {
+    score: number;
+    level: string;
+  };
+  events: {
+    recent_total: number;
+    processed: number;
+    pending: number;
+  };
+  roadmap_versions: RoadmapVersionSummary[];
+}
+
+export interface RoadmapVersionSummary {
+  id: string;
+  version_number: number;
+  generation_reason: string;
+  readiness_score_at_creation: number;
+  nodes_count: number;
+  total_hours: number;
+  created_at: string;
+}
+
+export interface ProgressExplanation {
+  summary: string;
+  skill_impact: string;
+  readiness_impact: string;
+  next_steps: string[];
+  encouragement: string;
+}
+
+export interface CareerEventResult {
+  success: boolean;
+  event_id?: string;
+  message?: string;
+  changes?: CareerChangeLog[];
+  readiness?: {
+    old: number;
+    new: number;
+    delta: number;
+  };
+  roadmap?: {
+    should_regenerate: boolean;
+    nodes_updated: number;
+  };
+  explanation?: ProgressExplanation | null;
+}
+
+// ─── Phase 8: Career Opportunity Intelligence ──────────────────────────────
+
+export interface CareerOpportunity {
+  id: string;
+  title: string;
+  organization: string | null;
+  location: string | null;
+  remote: string | null;
+  description: string | null;
+  opportunity_type: string | null;
+  experience_level: string | null;
+}
+
+export interface OpportunityRequirement {
+  skill_name: string;
+  requirement_type: 'required' | 'preferred' | 'certification';
+  importance: string;
+  importance_score: number;
+}
+
+export interface OpportunityBreakdown {
+  required_skill_coverage: number;
+  preferred_skill_coverage: number;
+  evidence_strength: number;
+  project_relevance: number;
+  certification_alignment: number;
+  experience_alignment: number;
+}
+
+export interface OpportunityMatch {
+  match_id: string;
+  opportunity_id: string;
+  opportunity_title: string;
+  organization: string;
+  overall_score: number;
+  category: 'highly_eligible' | 'strong_contender' | 'developing_candidate' | 'early_gap';
+  breakdown: OpportunityBreakdown;
+  missing_skills: MissingSkill[];
+  strengths: MatchStrength[];
+  recommendation: string;
+  weights: Record<string, number>;
+}
+
+export interface MissingSkill {
+  skill: string;
+  importance: string;
+  importance_score: number;
+  requirement_type: string;
+}
+
+export interface MatchStrength {
+  skill: string;
+  importance: string;
+  max_confidence: number;
+  evidence_count: number;
+  evidence_types: string[];
+}
+
+export interface SavedOpportunityMatch {
+  match_id: string;
+  opportunity_id: string;
+  opportunity_title: string;
+  organization: string;
+  overall_score: number;
+  category: string;
+  missing_skills: MissingSkill[];
+  strengths: MatchStrength[];
+  recommendation: string;
+  calculated_at: string;
+}
+
+export interface OpportunityComparison {
+  opportunity: CareerOpportunity;
+  match: OpportunityMatch | null;
+  requirements_count: number;
+  required_count: number;
 }

@@ -109,7 +109,12 @@ class Roadmap(Base):
 
     id = Column(PortableUUID(), primary_key=True, default=uuid.uuid4)
     assessment_id = Column(PortableUUID(), nullable=False, index=True)
+    user_id = Column(PortableUUID(), nullable=True, index=True)
+    version = Column(Integer, default=1)
+    generation_reason = Column(String(100), nullable=True)
+    readiness_score_at_creation = Column(Integer, default=0)
     steps = Column(PortableJSON(), default=list)
+    phases = Column(PortableJSON(), default=list)
     total_hours = Column(Integer, default=0)
     estimated_weeks = Column(Integer, default=0)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -364,3 +369,119 @@ class CareerRoleAnalysis(Base):
     analyzed_at = Column(DateTime(timezone=True), server_default=func.now())
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class CareerEvidenceEvent(Base):
+    __tablename__ = "career_evidence_events"
+
+    id = Column(PortableUUID(), primary_key=True, default=uuid.uuid4)
+    user_id = Column(PortableUUID(), nullable=False, index=True)
+    event_type = Column(String(50), nullable=False)
+    event_data = Column(PortableJSON(), default=dict)
+    status = Column(String(20), default="pending")
+    idempotency_key = Column(String(100), nullable=True, index=True)
+    retry_count = Column(Integer, default=0)
+    error_message = Column(Text, nullable=True)
+    processed_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class CareerChangeLog(Base):
+    __tablename__ = "career_change_logs"
+
+    id = Column(PortableUUID(), primary_key=True, default=uuid.uuid4)
+    user_id = Column(PortableUUID(), nullable=False, index=True)
+    event_id = Column(PortableUUID(), nullable=False, index=True)
+    change_type = Column(String(50), nullable=False)
+    skill_name = Column(String(100), nullable=True)
+    old_value = Column(PortableJSON(), nullable=True)
+    new_value = Column(PortableJSON(), nullable=True)
+    confidence_delta = Column(Integer, default=0)
+    readiness_delta = Column(Integer, default=0)
+    explanation = Column(Text, nullable=True)
+    ai_explanation = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class RoadmapVersion(Base):
+    __tablename__ = "roadmap_versions"
+
+    id = Column(PortableUUID(), primary_key=True, default=uuid.uuid4)
+    user_id = Column(PortableUUID(), nullable=False, index=True)
+    assessment_id = Column(PortableUUID(), nullable=False, index=True)
+    version_number = Column(Integer, default=1)
+    generation_reason = Column(String(100), nullable=True)
+    triggered_by_event_id = Column(PortableUUID(), nullable=True)
+    previous_version_id = Column(PortableUUID(), nullable=True)
+    readiness_score_at_creation = Column(Integer, default=0)
+    nodes_snapshot = Column(PortableJSON(), default=list)
+    phases_snapshot = Column(PortableJSON(), default=list)
+    total_hours = Column(Integer, default=0)
+    estimated_weeks = Column(Integer, default=0)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class MentorMemory(Base):
+    __tablename__ = "mentor_memories"
+
+    id = Column(PortableUUID(), primary_key=True, default=uuid.uuid4)
+    user_id = Column(PortableUUID(), nullable=False, index=True)
+    session_id = Column(String(100), nullable=False, index=True)
+    summary = Column(Text, nullable=False)
+    important_facts = Column(PortableJSON(), default=list)
+    current_goals = Column(PortableJSON(), default=list)
+    blockers = Column(PortableJSON(), default=list)
+    next_actions = Column(PortableJSON(), default=list)
+    learning_preferences = Column(PortableJSON(), default=dict)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class CareerOpportunity(Base):
+    __tablename__ = "career_opportunities"
+
+    id = Column(PortableUUID(), primary_key=True, default=uuid.uuid4)
+    title = Column(String(255), nullable=False)
+    organization = Column(String(255), nullable=True)
+    location = Column(String(255), nullable=True)
+    remote = Column(String(50), nullable=True)
+    description = Column(Text, nullable=True)
+    source = Column(String(100), nullable=True)
+    source_url = Column(String(500), nullable=True)
+    opportunity_type = Column(String(50), nullable=True)
+    experience_level = Column(String(50), nullable=True)
+    is_active = Column(Integer, default=1)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
+
+class OpportunityRequirement(Base):
+    __tablename__ = "opportunity_requirements"
+
+    id = Column(PortableUUID(), primary_key=True, default=uuid.uuid4)
+    opportunity_id = Column(PortableUUID(), nullable=False, index=True)
+    skill_name = Column(String(100), nullable=False)
+    requirement_type = Column(String(20), nullable=False)
+    importance = Column(String(20), default="important")
+    importance_score = Column(Integer, default=50)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class OpportunityMatch(Base):
+    __tablename__ = "opportunity_matches"
+
+    id = Column(PortableUUID(), primary_key=True, default=uuid.uuid4)
+    user_id = Column(PortableUUID(), nullable=False, index=True)
+    opportunity_id = Column(PortableUUID(), nullable=False, index=True)
+    match_score = Column(Integer, default=0)
+    required_skill_coverage = Column(Integer, default=0)
+    preferred_skill_coverage = Column(Integer, default=0)
+    evidence_score = Column(Integer, default=0)
+    certification_score = Column(Integer, default=0)
+    missing_skills = Column(PortableJSON(), default=list)
+    strengths = Column(PortableJSON(), default=list)
+    match_category = Column(String(30), default="early_gap")
+    recommendation = Column(Text, nullable=True)
+    prepared_plan = Column(PortableJSON(), default=dict)
+    calculated_at = Column(DateTime(timezone=True), server_default=func.now())
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
