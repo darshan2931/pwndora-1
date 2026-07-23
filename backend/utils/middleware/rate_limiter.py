@@ -57,8 +57,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 status_code=429,
                 content={
                     "success": False,
-                    "message": "Rate limit exceeded. Try again later.",
-                    "errors": [f"Retry after {retry_after}s"],
+                    "error": {
+                        "code": "RATE_LIMITED",
+                        "message": f"Rate limit exceeded. Retry after {retry_after}s.",
+                    },
                 },
                 headers={"Retry-After": str(retry_after)},
             )

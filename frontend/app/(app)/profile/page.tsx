@@ -1,8 +1,7 @@
 'use client';
 
 import { CheckCircle2, Clock, Trophy, BookOpen, Zap, Target, Star, Calendar, Flame } from 'lucide-react';
-import { api } from '@/services/api';
-import { useEffect, useState } from 'react';
+import { useDashboardData } from '@/components/providers/DashboardDataProvider';
 import type { Skill } from '@/types';
 
 const ICON_MAP: Record<string, any> = {
@@ -35,41 +34,22 @@ function SkillPill({ skill }: { skill: Skill }) {
 }
 
 export default function ProfilePage() {
-  const [data, setData] = useState<any>(null);
-  const [error, setError] = useState<string | null>(null);
+  const { data, loading } = useDashboardData();
 
-  useEffect(() => {
-    async function loadData() {
-      try {
-        const d = await api.getDashboardData();
-        setData(d.data);
-      } catch (e: any) {
-        console.error(e);
-        setError(e?.message || 'Failed to load profile');
-      }
-    }
-    loadData();
-  }, []);
+  if (loading) return <div className="p-8 text-white animate-pulse">Loading profile...</div>;
 
-  if (error) return (
+  if (!data?.profile) return (
     <div className="p-8 text-center">
       <div className="text-red-400 mb-2">Failed to load profile</div>
-      <div className="text-zinc-500 text-sm mb-4">{error}</div>
-      <button onClick={() => window.location.reload()} className="px-4 py-2 rounded-lg bg-blue-500/20 text-blue-400 text-sm hover:bg-blue-500/30 transition-colors">
-        Retry
-      </button>
     </div>
   );
 
-  if (!data || !data.profile) return <div className="p-8 text-white animate-pulse">Loading profile...</div>;
-
   const p = data.profile;
-  const completedRoadmap = data.roadmap?.filter((n: any) => n.status === 'completed').length || 0;
-  const totalHoursThisWeek = (data.weeklyProgress || []).reduce((s: number, d: any) => s + (d.hours || 0), 0);
+  const completedRoadmap = (data.roadmap || []).filter((n: any) => n.status === 'completed').length;
 
   return (
     <div className="max-w-5xl mx-auto animate-fade-in space-y-6">
-      {/* ── Header ──────────────────────────────────────────────────────── */}
+      {/* Header */}
       <div className="surface p-6">
         <div className="flex items-start gap-5">
           <div className="w-16 h-16 rounded-2xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center flex-shrink-0">

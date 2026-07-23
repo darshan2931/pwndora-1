@@ -19,6 +19,15 @@ const getHeaders = (isFormData = false) => {
   return headers;
 };
 
+const parseResponse = async (res: Response) => {
+  const text = await res.text();
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error('API Request Failed');
+  }
+};
+
 const handleResponse = async (res: Response) => {
   if (res.status === 401 || res.status === 403) {
     if (typeof window !== 'undefined') {
@@ -28,16 +37,11 @@ const handleResponse = async (res: Response) => {
     throw new Error('Unauthorized');
   }
   if (!res.ok) {
-    try {
-      const err = await res.json();
-      const message = err?.error?.message || err?.detail || 'API Request Failed';
-      throw new Error(message);
-    } catch (e) {
-      if (e instanceof SyntaxError) throw new Error('API Request Failed');
-      throw e;
-    }
+    const err = await parseResponse(res);
+    const message = err?.error?.message || err?.detail || 'API Request Failed';
+    throw new Error(message);
   }
-  return res.json();
+  return parseResponse(res);
 };
 
 export const api = {

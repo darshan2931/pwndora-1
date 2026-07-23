@@ -33,7 +33,8 @@ export default function RegisterPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.detail || 'Registration failed');
+        const message = errorData?.error?.message || (typeof errorData.detail === 'string' ? errorData.detail : errorData.detail?.message) || 'Registration failed';
+        throw new Error(message);
       }
 
       // Automatically log them in after registration
