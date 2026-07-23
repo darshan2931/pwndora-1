@@ -20,7 +20,7 @@ const getHeaders = (isFormData = false) => {
 };
 
 const handleResponse = async (res: Response) => {
-  if (res.status === 401) {
+  if (res.status === 401 || res.status === 403) {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('token');
       window.location.href = '/login';
@@ -30,7 +30,8 @@ const handleResponse = async (res: Response) => {
   if (!res.ok) {
     try {
       const err = await res.json();
-      throw new Error(err.detail || 'API Request Failed');
+      const message = err?.error?.message || err?.detail || 'API Request Failed';
+      throw new Error(message);
     } catch (e) {
       if (e instanceof SyntaxError) throw new Error('API Request Failed');
       throw e;

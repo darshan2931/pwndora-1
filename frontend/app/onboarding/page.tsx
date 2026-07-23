@@ -411,6 +411,9 @@ function SkillReviewScreen({ skills, missing, onToggle, onAddSkill, onRemoveMiss
           <h3 className="font-semibold text-white text-sm">Skills Detected</h3>
           <span className="ml-auto text-xs text-gray-500">{skills.filter(s => s.confirmed).length} confirmed</span>
         </div>
+        {skills.length === 0 ? (
+          <p className="text-sm text-gray-500">No skills detected yet. You can add them manually below or skip this step.</p>
+        ) : (
         <div className="flex flex-wrap gap-2">
           {skills.map(skill => (
             <button
@@ -434,6 +437,7 @@ function SkillReviewScreen({ skills, missing, onToggle, onAddSkill, onRemoveMiss
             </button>
           ))}
         </div>
+        )}
 
       </div>
 
@@ -689,6 +693,7 @@ export default function OnboardingPage() {
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [generatingDone, setGeneratingDone] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
 
   const [state, setState] = useState<OnboardingState>({
     name: '',
@@ -723,7 +728,7 @@ export default function OnboardingPage() {
       case 0: return state.name.trim().length > 0;
       case 1: return state.targetRole !== '';
       case 2: return true; // resume is optional
-      case 3: return state.detectedSkills.filter(s => s.confirmed).length > 0;
+      case 3: return true; // skills can be added manually or skipped
       case 4: return state.studyHours !== '' && state.experience !== '';
       default: return true;
     }
@@ -748,7 +753,8 @@ export default function OnboardingPage() {
           update('roadmap', res.data.roadmap || []);
           update('estimatedWeeks', res.data.estimated_weeks || 0);
         }
-      } catch (err) {
+      } catch (err: any) {
+        setApiError(err?.message || 'Failed to analyze resume');
         console.error(err);
       }
       next();
@@ -788,6 +794,22 @@ export default function OnboardingPage() {
       <div className="flex-1 flex flex-col items-center justify-center px-4 py-10">
         <div className="w-full max-w-2xl">
           <StepBar current={step} />
+          {apiError && (
+            <div className="mb-6 p-4 rounded-xl border border-red-500/30 bg-red-500/10 text-red-300 text-sm flex items-start gap-3">
+              <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+              </svg>
+              <div className="flex-1">
+                <p className="font-medium">Something went wrong</p>
+                <p className="text-red-400/80 mt-1">{apiError}</p>
+              </div>
+              <button onClick={() => setApiError(null)} className="text-red-400/60 hover:text-red-300">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          )}
           {screens[step]}
         </div>
       </div>
@@ -819,7 +841,8 @@ export default function OnboardingPage() {
                       study_hours: { 'lt5': 4, '5-10': 8, '10-20': 15, '20+': 25 }[state.studyHours] || 10,
                       learning_preferences: state.learningPrefs || ['labs']
                     });
-                } catch(e) {
+                } catch(e: any) {
+                   setApiError(e?.message || 'Failed to save assessment');
                    console.error("Failed to save assessment", e);
                 }
                 setTimeout(() => setGeneratingDone(true), 1500);

@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   CheckCircle2, Circle, Lock, PlayCircle, ExternalLink,
   ChevronDown, ChevronRight, Clock, Zap, BookOpen
 } from 'lucide-react';
 import { api } from '@/services/api';
+import { useDashboardData } from '@/components/providers/DashboardDataProvider';
 import type { RoadmapNode } from '@/types';
 
 const STATUS_CONFIG = {
@@ -143,31 +144,17 @@ function NodeCard({ node, index, totalNodes, onToggle }: { node: RoadmapNode; in
 }
 
 export default function RoadmapPage() {
-  const [data, setData] = useState<any>(null);
-  const [error, setError] = useState<string | null>(null);
+  const { data: dashboardData, loading, refresh } = useDashboardData();
   const [activeFilter, setActiveFilter] = useState('All');
 
-  useEffect(() => {
-    async function loadData() {
-      try {
-        const d = await api.getDashboardData();
-        setData(d.data);
-      } catch (e: any) {
-        console.error(e);
-        setError(e?.message || 'Failed to load roadmap');
-      }
-    }
-    loadData();
-  }, []);
-
   const handleToggle = async (index: number) => {
-    if (!data || !data.roadmap) return;
+    if (!dashboardData || !dashboardData.roadmap) return;
     
-    const assessmentId = data.profile?.id;
-    if (!assessmentId) return;
+    const roadmapId = dashboardData.roadmapId;
+    if (!roadmapId) return;
     
     // Optimistic UI update
-    const newRoadmap = [...data.roadmap];
+    const newRoadmap = [...dashboardData.roadmap];
     const node = newRoadmap[index];
     if (node.status === 'available') {
       node.status = 'in-progress';
@@ -180,32 +167,21 @@ export default function RoadmapPage() {
       }
     }
     
-    setData({ ...data, roadmap: newRoadmap });
-
     try {
-      await api.toggleRoadmapStep(assessmentId, index);
+      await api.toggleRoadmapStep(roadmapId, index);
+      await refresh();
     } catch (e) {
       console.error('Failed to toggle', e);
-      // Revert on failure by reloading
-      const d = await api.getDashboardData();
-      setData(d.data);
+      await refresh();
     }
   };
 
-  if (error) return (
-    <div className="p-8 text-center">
-      <div className="text-red-400 mb-2">Failed to load roadmap</div>
-      <div className="text-zinc-500 text-sm mb-4">{error}</div>
-      <button onClick={() => window.location.reload()} className="px-4 py-2 rounded-lg bg-blue-500/20 text-blue-400 text-sm hover:bg-blue-500/30 transition-colors">
-        Retry
-      </button>
-    </div>
-  );
+  if (loading) return <div className="p-8 text-white animate-pulse">Loading roadmap...</div>;
 
-  if (!data || !data.roadmap) return <div className="p-8 text-white animate-pulse">Loading roadmap...</div>;
+  if (!dashboardData || !dashboardData.roadmap) return <div className="p-8 text-center"><div className="text-zinc-500">No roadmap data. Complete onboarding first.</div></div>;
 
-  const roadmap = data.roadmap || [];
-  const profile = data.profile || {};
+  const roadmap = dashboardData.roadmap || [];
+  const profile = dashboardData.profile || {};
   const completed = roadmap.filter((n: any) => n.status === 'completed').length;
   const inProgress = roadmap.filter((n: any) => n.status === 'in-progress').length;
   const total = roadmap.length;

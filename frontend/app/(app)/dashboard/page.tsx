@@ -6,8 +6,7 @@ import {
   ArrowRight, Clock, TrendingUp, CheckCircle2,
   Circle, Flame, Star
 } from 'lucide-react';
-import { api } from '@/services/api';
-import { useEffect, useState } from 'react';
+import { useDashboardData } from '@/components/providers/DashboardDataProvider';
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -89,33 +88,11 @@ function RoadmapPreview({ roadmap }: { roadmap: any[] }) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
-  const [data, setData] = useState<any>(null);
-  const [error, setError] = useState<string | null>(null);
+  const { data, loading } = useDashboardData();
 
-  useEffect(() => {
-    async function loadData() {
-      try {
-        const d = await api.getDashboardData();
-        setData(d.data);
-      } catch (e: any) {
-        console.error(e);
-        setError(e?.message || 'Failed to load dashboard data');
-      }
-    }
-    loadData();
-  }, []);
+  if (loading) return <div className="p-8 text-white animate-pulse">Loading dashboard...</div>;
 
-  if (error) return (
-    <div className="p-8 text-center">
-      <div className="text-red-400 mb-2">Failed to load dashboard</div>
-      <div className="text-zinc-500 text-sm mb-4">{error}</div>
-      <button onClick={() => window.location.reload()} className="px-4 py-2 rounded-lg bg-blue-500/20 text-blue-400 text-sm hover:bg-blue-500/30 transition-colors">
-        Retry
-      </button>
-    </div>
-  );
-
-  if (!data || !data.profile) return <div className="p-8 text-white animate-pulse">Loading dashboard...</div>;
+  if (!data || !data.profile) return <div className="p-8 text-center"><div className="text-zinc-500">No dashboard data. Complete onboarding first.</div></div>;
 
   const { profile, roadmap, mentorContext, weeklyProgress, dailyMission } = data;
   

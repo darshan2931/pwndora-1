@@ -6,6 +6,7 @@ import { api } from '@/services/api';
 interface DashboardData {
   profile: any;
   roadmap: any[];
+  roadmapId: string | null;
   mentorContext: any;
   weeklyProgress: any[];
   dailyMission: any;

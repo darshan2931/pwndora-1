@@ -101,13 +101,20 @@ app.include_router(router, prefix="/api/v1")
 async def global_exception_handler(request, exc):
     from fastapi.exceptions import HTTPException as FastAPIHTTPException
     if isinstance(exc, FastAPIHTTPException):
+        detail = exc.detail if hasattr(exc, "detail") else str(exc)
+        if isinstance(detail, dict):
+            message = detail.get("message", str(detail))
+            code = detail.get("code", "HTTP_ERROR")
+        else:
+            message = str(detail)
+            code = "HTTP_ERROR"
         return JSONResponse(
             status_code=exc.status_code,
             content={
                 "success": False,
                 "error": {
-                    "code": "HTTP_ERROR",
-                    "message": str(exc.detail) if hasattr(exc, "detail") else str(exc),
+                    "code": code,
+                    "message": message,
                 },
             },
         )

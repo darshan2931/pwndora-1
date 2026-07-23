@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Bot, Send, RotateCcw, Target, Clock, Zap, Copy, Check, BookOpen, Briefcase, Code, GraduationCap, BarChart3, MessageSquare, Compass } from 'lucide-react';
 import { api } from '@/services/api';
+import { useDashboardData } from '@/components/providers/DashboardDataProvider';
 import type { MentorMessage } from '@/types';
 
 type MentorMode = 'auto' | 'career' | 'roadmap' | 'skill' | 'project' | 'interview';
@@ -131,42 +132,21 @@ export default function MentorPage() {
   const [messages, setMessages] = useState<MentorMessage[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
-  const [data, setData] = useState<any>(null);
-  const [error, setError] = useState<string | null>(null);
   const [activeMode, setActiveMode] = useState<MentorMode>('auto');
   
+  const { data, loading: dataLoading } = useDashboardData();
+
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-
-  useEffect(() => {
-    async function loadData() {
-      try {
-        const d = await api.getDashboardData();
-        setData(d.data);
-      } catch (e: any) {
-        console.error(e);
-        setError(e?.message || 'Failed to load mentor data');
-      }
-    }
-    loadData();
-  }, []);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
 
-  if (error) return (
-    <div className="p-8 text-center">
-      <div className="text-red-400 mb-2">Failed to load mentor</div>
-      <div className="text-zinc-500 text-sm mb-4">{error}</div>
-      <button onClick={() => window.location.reload()} className="px-4 py-2 rounded-lg bg-blue-500/20 text-blue-400 text-sm hover:bg-blue-500/30 transition-colors">
-        Retry
-      </button>
-    </div>
-  );
+  if (dataLoading) return <div className="p-8 text-white animate-pulse">Loading mentor...</div>;
 
-  if (!data) return <div className="p-8 text-white animate-pulse">Loading mentor...</div>;
-  const { profile, mentorContext } = data;
+  if (!data) return <div className="p-8 text-center"><div className="text-zinc-500">No mentor data. Complete onboarding first.</div></div>;
+  const { profile = {}, mentorContext = {} } = data;
 
   const send = async (text?: string) => {
     const msg = (text || input).trim();

@@ -1139,6 +1139,7 @@ async def get_dashboard(current_user: User = Depends(get_current_user)):
         "data": {
             "profile": profile,
             "roadmap": roadmap_steps,
+            "roadmapId": str(db_roadmap.id) if db_roadmap else None,
             "mentorContext": mentor_context,
             "weeklyProgress": weekly_progress,
             "dailyMission": daily_mission
