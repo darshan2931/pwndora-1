@@ -1,10 +1,10 @@
 import logging
+import uuid
 from typing import Optional, List, Dict
 
 from database.session import SessionLocal
 from models.sqlalchemy_models import (
     CareerOpportunity, OpportunityRequirement, OpportunityMatch,
-    SkillEvidence, Assessment,
 )
 
 logger = logging.getLogger(__name__)
@@ -19,6 +19,13 @@ class CareerOpportunityRepository:
             db.close()
 
     def get_by_id(self, opportunity_id: str) -> Optional[CareerOpportunity]:
+        if not opportunity_id:
+            return None
+        try:
+            uuid.UUID(str(opportunity_id))
+        except (ValueError, AttributeError, TypeError):
+            logger.warning("Invalid opportunity UUID: %r", opportunity_id)
+            return None
         db = SessionLocal()
         try:
             return db.query(CareerOpportunity).filter(CareerOpportunity.id == opportunity_id).first()

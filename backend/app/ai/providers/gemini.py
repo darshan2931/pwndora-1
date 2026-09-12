@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 from typing import Optional
 
 import httpx
@@ -10,10 +11,10 @@ logger = logging.getLogger(__name__)
 
 
 class GeminiProvider(BaseAIProvider):
-    def __init__(self, api_key: str, model: str = "gemini-2.0-flash"):
+    def __init__(self, api_key: str, model: str = None):
         self.api_key = api_key
-        self.model = model
-        self.base_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+        self.model = model or os.getenv("GEMINI_MODEL", "gemini-flash-latest")
+        self.base_url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent"
 
     async def chat(self, prompt: str, system_prompt: str = "", json_mode: bool = False) -> str:
         payload = self._build_payload([{"role": "user", "content": prompt}], system_prompt, json_mode)

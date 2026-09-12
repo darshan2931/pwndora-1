@@ -26,6 +26,7 @@ services:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-cyberpath}:${POSTGRES_PASSWORD:-password123}@db:5432/${POSTGRES_DB:-cyberpath_db}
       - MISTRAL_API_KEY=${MISTRAL_API_KEY}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-flash-latest}
       - SECRET_KEY=${SECRET_KEY:-super_secret_jwt_key_for_development}
       - GITHUB_TOKEN=${GITHUB_TOKEN}
       - GITHUB_MAX_REPOSITORIES=${GITHUB_MAX_REPOSITORIES:-10}

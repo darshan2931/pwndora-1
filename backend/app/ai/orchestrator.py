@@ -20,12 +20,28 @@ class AIOrchestrator:
         return self.provider is not None or self.fallback_provider is not None
         
     async def _execute_with_retry(self, provider: BaseAIProvider, task_prompt: str, system_prompt: str, json_mode: bool) -> str:
-        from tenacity import retry, stop_after_attempt, wait_exponential
-        
-        @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10))
+        import httpx
+        from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception
+
+        # Retry transient failures only: network errors, timeouts, and 5xx
+        # server errors. Deterministic 4xx errors (invalid key, missing model,
+        # rate limit) fail fast on the first call.
+        def _is_retryable(exc: BaseException) -> bool:
+            if isinstance(exc, (httpx.TimeoutException, httpx.NetworkError, httpx.ConnectError, httpx.ReadError)):
+                return True
+            if isinstance(exc, httpx.HTTPStatusError):
+                return exc.response is not None and exc.response.status_code >= 500
+            return False
+
+        @retry(
+            stop=stop_after_attempt(2),
+            wait=wait_exponential(multiplier=0.5, min=0.5, max=2),
+            retry=retry_if_exception(_is_retryable),
+            reraise=True,
+        )
         async def _call():
             return await provider.chat(prompt=task_prompt, system_prompt=system_prompt, json_mode=json_mode)
-            
+
         return await _call()
 
     async def execute_task(

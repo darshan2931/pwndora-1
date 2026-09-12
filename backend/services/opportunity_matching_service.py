@@ -4,7 +4,7 @@ from datetime import datetime
 
 from models.sqlalchemy_models import (
     CareerOpportunity, OpportunityRequirement, OpportunityMatch,
-    SkillEvidence, UserSkillLevel, Assessment,
+    SkillEvidence,
 )
 from repositories.opportunity_repositories import (
     CareerOpportunityRepository,
