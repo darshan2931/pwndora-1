@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard, Map, Bot, User, ChevronRight,
-  Shield, Zap, BookOpen, Trophy, Settings, FileText, Briefcase
+  Shield, Zap, BookOpen, Trophy, Settings, FileText, Briefcase, Award, TrendingUp
 } from 'lucide-react';
 import { api } from '@/services/api';
 import { useDashboardData } from '@/components/providers/DashboardDataProvider';
@@ -12,6 +12,8 @@ import { useDashboardData } from '@/components/providers/DashboardDataProvider';
 const NAV = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/roadmap', label: 'Roadmap', icon: Map },
+  { href: '/certifications', label: 'Certifications', icon: Award },
+  { href: '/progress', label: 'Progress', icon: TrendingUp },
   { href: '/mentor', label: 'AI Mentor', icon: Bot },
   { href: '/opportunities', label: 'Opportunities', icon: Briefcase },
   { href: '/resume', label: 'Resume', icon: FileText },

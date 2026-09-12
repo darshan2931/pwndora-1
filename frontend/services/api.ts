@@ -476,6 +476,55 @@ export const api = {
     });
     return handleResponse(res);
   },
+
+  planCertifications: async (weeklyHours?: number, completedCerts?: string[]) => {
+    const body: Record<string, unknown> = {};
+    if (weeklyHours !== undefined) body.weekly_hours = weeklyHours;
+    if (completedCerts && completedCerts.length) body.completed_certifications = completedCerts;
+    const res = await fetch(`${API_BASE}/certifications/plan`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(body),
+    });
+    return handleResponse(res);
+  },
+
+  logStudyHours: async (hours: number, notes?: string, date?: string) => {
+    const body: Record<string, unknown> = { hours };
+    if (notes) body.notes = notes;
+    if (date) body.date = date;
+    const res = await fetch(`${API_BASE}/progress/log-study`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(body),
+    });
+    return handleResponse(res);
+  },
+
+  getWeeklyProgress: async () => {
+    const res = await fetch(`${API_BASE}/progress/weekly`, {
+      method: 'GET',
+      headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
+
+  setWeeklyGoal: async (goalHours: number) => {
+    const res = await fetch(`${API_BASE}/progress/goal`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ goal_hours: goalHours }),
+    });
+    return handleResponse(res);
+  },
+
+  getPortfolio: async () => {
+    const res = await fetch(`${API_BASE}/progress/portfolio`, {
+      method: 'GET',
+      headers: getHeaders(),
+    });
+    return handleResponse(res);
+  },
 };
 
 export default api;

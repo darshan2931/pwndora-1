@@ -40,3 +40,23 @@ certification_schema:
         type: string
       description: Skills or certifications required before attempting
       default: []
+    exam_cost:
+      type: number
+      description: Cost of the certification exam in USD
+      examples: [404, 1750]
+    training_cost:
+      type: number
+      description: Typical cost of official training/vouchers in USD
+      examples: [0, 1600]
+    study_hours:
+      type: number
+      description: Estimated total self-study preparation hours
+      examples: [60, 300]
+    validity_years:
+      type: number
+      description: How long the certification remains valid in years
+      examples: [3, 4]
+    renewal_cost:
+      type: number
+      description: Annual or 3-year renewal cost in USD
+      examples: [0, 150]

@@ -1,7 +1,7 @@
 import json
 import uuid
 
-from sqlalchemy import Column, String, Integer, DateTime, Text, func, Index, TypeDecorator, types
+from sqlalchemy import Column, String, Integer, DateTime, Text, func, Index, TypeDecorator, types, Date
 
 
 from database.session import Base
@@ -234,6 +234,27 @@ class Achievement(Base):
     description = Column(Text)
     icon = Column(String(50))
     earned_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class StudyLog(Base):
+    __tablename__ = "study_logs"
+
+    id = Column(PortableUUID(), primary_key=True, default=uuid.uuid4)
+    user_id = Column(PortableUUID(), nullable=False, index=True)
+    log_date = Column(Date, nullable=False, index=True)
+    hours = Column(Integer, default=0)
+    notes = Column(String(255))
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class WeeklyGoal(Base):
+    __tablename__ = "weekly_goals"
+
+    id = Column(PortableUUID(), primary_key=True, default=uuid.uuid4)
+    user_id = Column(PortableUUID(), nullable=False, index=True)
+    week_start = Column(Date, nullable=False, index=True)
+    goal_hours = Column(Integer, nullable=False, default=10)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 
 class KnowledgeCache(Base):

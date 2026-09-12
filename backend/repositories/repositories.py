@@ -1,5 +1,5 @@
 from database.session import SessionLocal
-from models.sqlalchemy_models import User, Assessment, Roadmap, ChatHistory, ResumeReview, ResumeProfile, GitHubProfile, GitHubRepositoryEvidence, SkillEvidence, UserSkillProfile, CareerRoleAnalysis, CareerEvidenceEvent, CareerChangeLog, RoadmapVersion
+from models.sqlalchemy_models import User, Assessment, Roadmap, ChatHistory, ResumeReview, ResumeProfile, GitHubProfile, GitHubRepositoryEvidence, SkillEvidence, UserSkillProfile, CareerRoleAnalysis, CareerEvidenceEvent, CareerChangeLog, RoadmapVersion, StudyLog, WeeklyGoal
 
 
 class UserRepository:
@@ -780,5 +780,89 @@ class RoadmapVersionRepository:
                 .first()
             )
             return (latest.version_number + 1) if latest else 1
+        finally:
+            db.close()
+
+
+class StudyLogRepository:
+    def upsert(self, user_id: str, log_date, hours: int, notes: str = "") -> StudyLog:
+        db = SessionLocal()
+        try:
+            entry = (
+                db.query(StudyLog)
+                .filter(StudyLog.user_id == user_id, StudyLog.log_date == log_date)
+                .first()
+            )
+            if entry:
+                entry.hours = int(entry.hours or 0) + int(hours)
+                if notes:
+                    entry.notes = notes
+            else:
+                entry = StudyLog(user_id=user_id, log_date=log_date, hours=int(hours), notes=notes)
+                db.add(entry)
+            db.commit()
+            db.refresh(entry)
+            return entry
+        finally:
+            db.close()
+
+    def get_for_week(self, user_id: str, week_start, week_end) -> list:
+        db = SessionLocal()
+        try:
+            return (
+                db.query(StudyLog)
+                .filter(
+                    StudyLog.user_id == user_id,
+                    StudyLog.log_date >= week_start,
+                    StudyLog.log_date <= week_end,
+                )
+                .order_by(StudyLog.log_date.asc())
+                .all()
+            )
+        finally:
+            db.close()
+
+    def get_all_for_user(self, user_id: str, limit: int = 90) -> list:
+        db = SessionLocal()
+        try:
+            return (
+                db.query(StudyLog)
+                .filter(StudyLog.user_id == user_id)
+                .order_by(StudyLog.log_date.desc())
+                .limit(limit)
+                .all()
+            )
+        finally:
+            db.close()
+
+
+class WeeklyGoalRepository:
+    def get_for_week(self, user_id: str, week_start) -> WeeklyGoal:
+        db = SessionLocal()
+        try:
+            return (
+                db.query(WeeklyGoal)
+                .filter(WeeklyGoal.user_id == user_id, WeeklyGoal.week_start == week_start)
+                .first()
+            )
+        finally:
+            db.close()
+
+    def upsert(self, user_id: str, week_start, goal_hours: int) -> WeeklyGoal:
+        db = SessionLocal()
+        try:
+            goal = (
+                db.query(WeeklyGoal)
+                .filter(WeeklyGoal.user_id == user_id, WeeklyGoal.week_start == week_start)
+                .first()
+            )
+            if goal:
+                goal.goal_hours = goal_hours
+            else:
+                goal = WeeklyGoal(user_id=user_id, week_start=week_start, goal_hours=goal_hours)
+                db.add(goal)
+            db.commit()
+            db.refresh(goal)
+            return goal
         finally:
             db.close()

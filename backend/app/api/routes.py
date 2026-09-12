@@ -1123,11 +1123,26 @@ async def get_dashboard(current_user: User = Depends(get_current_user)):
         "estimatedTimeToReady": f"{db_roadmap.estimated_weeks} weeks" if db_roadmap else "Unknown"
     }
     
-    # Build Weekly Progress (Mocked for now since Progress model isn't populated)
+    # Build Weekly Progress from real study logs
+    import datetime as _dt
+    from repositories.repositories import StudyLogRepository, WeeklyGoalRepository
+
+    _today = _dt.date.today()
+    _week_start = _today - _dt.timedelta(days=_today.weekday())
+    _week_end = _week_start + _dt.timedelta(days=6)
+    _study_repo = StudyLogRepository()
+    _goal_repo = WeeklyGoalRepository()
+    _logs = _study_repo.get_for_week(str(current_user.id), _week_start, _week_end)
+    _goal = _goal_repo.get_for_week(str(current_user.id), _week_start)
+    _goal_hours = _goal.goal_hours if _goal else (db_assess.weekly_hours or 10)
+    _day_goal = _goal_hours / 7
+
     days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-    weekly_progress = [{"day": d, "hours": 0, "goal": (db_assess.weekly_hours or 10) / 7} for d in days]
-    weekly_progress[0]["hours"] = 2  # Fake some progress
-    
+    weekly_progress = [{"day": d, "hours": 0, "goal": round(_day_goal, 1)} for d in days]
+    for _log in _logs:
+        _idx = max(0, min(6, (_log.log_date.weekday())))
+        weekly_progress[_idx]["hours"] = int(_log.hours or 0)
+
     daily_mission = {
         "node": today_mission,
         "estimatedMinutes": today_mission.get("estimatedHours", 1) * 60 if today_mission else 60,
@@ -1215,6 +1230,41 @@ async def get_recommendations(current_user: User = Depends(get_current_user)):
     }
 
 
+@router.post("/certifications/plan")
+async def plan_certifications(request: dict, current_user: User = Depends(get_current_user)):
+    from repositories.repositories import AssessmentRepository
+    from services.certification_planner_service import certification_planner_service
+
+    assessment_repo = AssessmentRepository()
+    db_assess = assessment_repo.get_by_user_id(str(current_user.id))
+    if isinstance(db_assess, list):
+        db_assess = db_assess[0] if db_assess else None
+
+    if not db_assess:
+        not_found("No assessment found")
+
+    requested_weekly = request.get("weekly_hours")
+    if requested_weekly is not None:
+        try:
+            weekly = float(requested_weekly)
+        except (TypeError, ValueError):
+            weekly = float(db_assess.weekly_hours or 10)
+    else:
+        weekly = float(db_assess.weekly_hours or 10)
+
+    completed_certs = request.get("completed_certifications") or []
+    if isinstance(completed_certs, str):
+        completed_certs = [c.strip() for c in completed_certs.split(",") if c.strip()]
+
+    plan = certification_planner_service.build_plan(
+        career_goal=str(db_assess.career_goal),
+        study_hours_per_week=weekly,
+        completed_certifications=completed_certs,
+    )
+
+    return {"success": True, "data": plan}
+
+
 @router.post("/progress/update")
 async def update_progress(request: dict, current_user: User = Depends(get_current_user)):
     skill_name = request.get("skill_name")
@@ -1268,6 +1318,166 @@ async def update_progress(request: dict, current_user: User = Depends(get_curren
     return {
         "success": True,
         "data": result
+    }
+
+
+@router.post("/progress/log-study")
+async def log_study_hours(request: dict, current_user: User = Depends(get_current_user)):
+    from repositories.repositories import StudyLogRepository
+    import datetime as dt
+
+    hours = request.get("hours", 1)
+    try:
+        hours = max(1, int(hours))
+    except (TypeError, ValueError):
+        validation_error("hours must be a positive integer")
+
+    log_date_raw = request.get("date")
+    if log_date_raw:
+        try:
+            log_date = dt.date.fromisoformat(str(log_date_raw))
+        except ValueError:
+            validation_error("date must be in YYYY-MM-DD format")
+    else:
+        log_date = dt.date.today()
+
+    notes = sanitize_string(request.get("notes", ""), max_length=255)
+
+    repo = StudyLogRepository()
+    entry = repo.upsert(str(current_user.id), log_date, hours, notes)
+
+    return {
+        "success": True,
+        "data": {
+            "date": log_date.isoformat(),
+            "hours": entry.hours,
+            "notes": entry.notes,
+            "created_at": entry.created_at.isoformat() if entry.created_at else None,
+        },
+    }
+
+
+@router.get("/progress/weekly")
+async def get_weekly_progress(current_user: User = Depends(get_current_user)):
+    from repositories.repositories import StudyLogRepository, WeeklyGoalRepository
+    import datetime as dt
+
+    today = dt.date.today()
+    week_start = today - dt.timedelta(days=today.weekday())
+    week_end = week_start + dt.timedelta(days=6)
+
+    study_repo = StudyLogRepository()
+    goal_repo = WeeklyGoalRepository()
+
+    logs = study_repo.get_for_week(str(current_user.id), week_start, week_end)
+    goal = goal_repo.get_for_week(str(current_user.id), week_start)
+
+    days = []
+    total_hours = 0
+    for day_offset in range(7):
+        day = week_start + dt.timedelta(days=day_offset)
+        day_hours = 0
+        day_notes = ""
+        for log in logs:
+            if log.log_date == day:
+                day_hours = int(log.hours or 0)
+                day_notes = log.notes or ""
+                break
+        total_hours += day_hours
+        days.append({
+            "day": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][day_offset],
+            "date": day.isoformat(),
+            "hours": day_hours,
+            "notes": day_notes,
+        })
+
+    goal_hours = goal.goal_hours if goal else 10
+    progress_pct = min(100, int(round(total_hours / max(1, goal_hours) * 100)))
+
+    return {
+        "success": True,
+        "data": {
+            "week_start": week_start.isoformat(),
+            "week_end": week_end.isoformat(),
+            "goal_hours": goal_hours,
+            "total_hours": total_hours,
+            "remaining_hours": max(0, goal_hours - total_hours),
+            "progress_pct": progress_pct,
+            "goal_met": total_hours >= goal_hours,
+            "days": days,
+        },
+    }
+
+
+@router.post("/progress/goal")
+async def set_weekly_goal(request: dict, current_user: User = Depends(get_current_user)):
+    from repositories.repositories import WeeklyGoalRepository
+    import datetime as dt
+
+    goal_hours = request.get("goal_hours", 10)
+    try:
+        goal_hours = max(1, min(80, int(goal_hours)))
+    except (TypeError, ValueError):
+        validation_error("goal_hours must be an integer between 1 and 80")
+
+    today = dt.date.today()
+    week_start = today - dt.timedelta(days=today.weekday())
+
+    repo = WeeklyGoalRepository()
+    goal = repo.upsert(str(current_user.id), week_start, goal_hours)
+
+    return {
+        "success": True,
+        "data": {
+            "week_start": week_start.isoformat(),
+            "goal_hours": goal.goal_hours,
+        },
+    }
+
+
+@router.get("/progress/portfolio")
+async def get_portfolio(current_user: User = Depends(get_current_user)):
+    from repositories.repositories import AssessmentRepository
+    from database.session import SessionLocal
+
+    assessment_repo = AssessmentRepository()
+    db_assess = assessment_repo.get_by_user_id(str(current_user.id))
+    if isinstance(db_assess, list):
+        db_assess = db_assess[0] if db_assess else None
+
+    portfolio = []
+    if db_assess:
+        from models.sqlalchemy_models import Roadmap
+        db = SessionLocal()
+        try:
+            roadmap = (
+                db.query(Roadmap)
+                .filter(Roadmap.assessment_id == db_assess.id)
+                .order_by(Roadmap.created_at.desc())
+                .first()
+            )
+            if roadmap and roadmap.steps:
+                for idx, step in enumerate(roadmap.steps):
+                    if step.get("type") in ("project", "milestone"):
+                        portfolio.append({
+                            "id": step.get("id", f"project-{idx + 1}"),
+                            "title": step.get("title", "Untitled Project"),
+                            "type": "roadmap",
+                            "status": step.get("status", "available"),
+                            "skills": step.get("skills", []),
+                            "estimatedHours": step.get("estimatedHours", 0),
+                            "description": step.get("description", ""),
+                            "url": next(
+                                (r.get("url") for r in step.get("resources", []) if r.get("url")),
+                                "#"
+                            ) if step.get("resources") else "#",
+                        })
+        finally:
+            db.close()
+
+    return {
+        "success": True,
+        "data": {"projects": portfolio},
     }
 
 

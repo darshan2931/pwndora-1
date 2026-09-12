@@ -73,6 +73,12 @@ class KnowledgeLoader:
     def get_certifications(self) -> list:
         return self._load("certifications.json")
 
+    def get_certification(self, cert_name: str) -> Optional[dict]:
+        for cert in self.get_certifications():
+            if cert.get("name", "").lower() == cert_name.strip().lower():
+                return cert
+        return None
+
     def get_learning_paths(self) -> list:
         return self._load("learning_paths.json")
 

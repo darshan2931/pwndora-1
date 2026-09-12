@@ -105,4 +105,63 @@ print("\n=== MENTOR ===")
 s, r = api_call("GET", "/mentor/greeting", token=token)
 check("Mentor Greeting", s, r)
 
+# 8. Certification Planner
+print("\n=== CERT PLANNER ===")
+s, r = api_call("POST", "/certifications/plan", {"weekly_hours": 10}, token=token)
+ok = s == 200 and isinstance(r, dict) and r.get("success") and r.get("data", {}).get("summary", {}).get("total_certifications", 0) > 0
+print(f"[{'OK' if ok else 'FAIL'}] Certification Planner -> {s}")
+if isinstance(r, dict) and r.get("data"):
+    plan = r["data"]
+    print(f"  career={plan.get('career')}, certs={plan['summary'].get('total_certifications')}, weeks={plan['summary'].get('total_weeks')}, cost=${plan['summary'].get('total_cost')}")
+    for c in plan.get("certifications", [])[:5]:
+        print(f"    #{c['position']} {c['name']} ({c['difficulty']}) {c['weeks']}w ${c['cost']['total']}")
+elif not ok:
+    print(f"       {json.dumps(r, indent=2)[:500]}")
+
+# 9. Log Study Hours + Weekly Progress (V2-B)
+print("\n=== PROGRESS TRACKING ===")
+s, r = api_call("POST", "/progress/log-study", {"hours": 3, "notes": "Protocols + NMAP lab"}, token=token)
+ok = s == 200 and isinstance(r, dict) and r.get("success")
+print(f"[{'OK' if ok else 'FAIL'}] Log Study Hours -> {s}")
+if not ok:
+    print(f"       {json.dumps(r, indent=2)[:500]}")
+
+s, r = api_call("GET", "/progress/weekly", token=token)
+ok = s == 200 and isinstance(r, dict) and r.get("success") and r.get("data", {}).get("total_hours", 0) >= 3
+print(f"[{'OK' if ok else 'FAIL'}] Weekly Progress -> {s}")
+if isinstance(r, dict) and r.get("data"):
+    w = r["data"]
+    print(f"  week={w.get('week_start')} goal={w.get('goal_hours')}h total={w.get('total_hours')}h pct={w.get('progress_pct')}%")
+if not ok:
+    print(f"       {json.dumps(r, indent=2)[:500]}")
+
+s, r = api_call("POST", "/progress/goal", {"goal_hours": 15}, token=token)
+ok = s == 200 and isinstance(r, dict) and r.get("success")
+print(f"[{'OK' if ok else 'FAIL'}] Set Weekly Goal -> {s}")
+if not ok:
+    print(f"       {json.dumps(r, indent=2)[:500]}")
+
+# 10. Portfolio
+print("\n=== PORTFOLIO ===")
+s, r = api_call("GET", "/progress/portfolio", token=token)
+ok = s == 200 and isinstance(r, dict) and r.get("success")
+print(f"[{'OK' if ok else 'FAIL'}] Portfolio -> {s}")
+if isinstance(r, dict) and r.get("data"):
+    print(f"  projects={len(r['data'].get('projects', []))}")
+if not ok:
+    print(f"       {json.dumps(r, indent=2)[:500]}")
+
+# 11. Dashboard weekly progress should now be real
+print("\n=== DASHBOARD WEEKLY (VERIFY) ===")
+s, r = api_call("GET", "/career/dashboard", token=token)
+ok = s == 200 and isinstance(r, dict) and r.get("success")
+print(f"[{'OK' if ok else 'FAIL'}] Dashboard (verify) -> {s}")
+if ok and r.get("data"):
+    wp = r["data"].get("weeklyProgress", [])
+    total = sum(d.get("hours", 0) for d in wp)
+    print(f"  weeklyProgress={wp}")
+    print(f"  total logged across week = {total}h")
+if not ok:
+    print(f"       {json.dumps(r, indent=2)[:500]}")
+
 print("\n=== ALL DONE ===")

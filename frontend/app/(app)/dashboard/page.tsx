@@ -1,12 +1,14 @@
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
 import {
   Target, Zap, BookOpen, Bot, Map, Trophy,
   ArrowRight, Clock, TrendingUp, CheckCircle2,
-  Circle, Flame, Star
+  Circle, Flame, Star, Plus, Pencil
 } from 'lucide-react';
 import { useDashboardData } from '@/components/providers/DashboardDataProvider';
+import { api } from '@/services/api';
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
@@ -88,7 +90,11 @@ function RoadmapPreview({ roadmap }: { roadmap: any[] }) {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
-  const { data, loading } = useDashboardData();
+  const { data, loading, refresh } = useDashboardData();
+  const [hoursInput, setHoursInput] = useState('');
+  const [goalInput, setGoalInput] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [feedback, setFeedback] = useState('');
 
   if (loading) return <div className="p-8 text-white animate-pulse">Loading dashboard...</div>;
 
@@ -114,6 +120,39 @@ export default function DashboardPage() {
     if (h < 17) return 'Good afternoon';
     return 'Good evening';
   })();
+
+  const handleLogHours = async () => {
+    const h = parseInt(hoursInput, 10);
+    if (!h || h < 1) { setFeedback('Enter hours (1-80)'); return; }
+    setSaving(true);
+    setFeedback('');
+    try {
+      await api.logStudyHours(h);
+      setHoursInput('');
+      setFeedback(`Logged ${h}h. Refreshing...`);
+      await refresh();
+    } catch (e: any) {
+      setFeedback(e?.message || 'Failed to log hours');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSetGoal = async () => {
+    const g = parseInt(goalInput, 10);
+    if (!g || g < 1 || g > 80) { setFeedback('Enter goal (1-80h)'); return; }
+    setSaving(true);
+    try {
+      await api.setWeeklyGoal(g);
+      setGoalInput('');
+      setFeedback(`Weekly goal set to ${g}h`);
+      await refresh();
+    } catch (e: any) {
+      setFeedback(e?.message || 'Failed to set goal');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <div className="max-w-6xl mx-auto space-y-6 animate-fade-in">
@@ -281,6 +320,48 @@ export default function DashboardPage() {
             <div className="text-right">
               <div className="text-sm font-semibold text-amber-400">{weeklyPct}%</div>
               <div className="text-xs text-zinc-500">of weekly goal</div>
+            </div>
+          </div>
+
+          <div className="mt-4 space-y-2">
+            {feedback && <div className="text-xs text-emerald-400">{feedback}</div>}
+            <div className="flex gap-2">
+              <input
+                type="number"
+                min={1}
+                max={80}
+                value={hoursInput}
+                onChange={(e) => setHoursInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleLogHours()}
+                placeholder="Log hours"
+                className="flex-1 min-w-0 px-3 py-2 rounded-lg bg-white/[0.05] border border-white/[0.08] text-sm text-[#fafafa] placeholder:text-zinc-600 focus:outline-none focus:border-blue-500/50"
+              />
+              <button
+                onClick={handleLogHours}
+                disabled={saving}
+                className="flex items-center gap-1 px-3 py-2 rounded-lg bg-blue-500 hover:bg-blue-600 disabled:opacity-50 text-xs font-semibold text-white transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" /> Log
+              </button>
+            </div>
+            <div className="flex gap-2">
+              <input
+                type="number"
+                min={1}
+                max={80}
+                value={goalInput}
+                onChange={(e) => setGoalInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSetGoal()}
+                placeholder="Set weekly goal (h)"
+                className="flex-1 min-w-0 px-3 py-2 rounded-lg bg-white/[0.05] border border-white/[0.08] text-sm text-[#fafafa] placeholder:text-zinc-600 focus:outline-none focus:border-blue-500/50"
+              />
+              <button
+                onClick={handleSetGoal}
+                disabled={saving}
+                className="flex items-center gap-1 px-3 py-2 rounded-lg bg-white/[0.06] hover:bg-white/[0.10] disabled:opacity-50 text-xs font-semibold text-zinc-300 transition-colors"
+              >
+                <Pencil className="w-3.5 h-3.5" /> Goal
+              </button>
             </div>
           </div>
         </div>
